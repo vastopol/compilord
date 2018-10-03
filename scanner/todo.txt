@@ -1,0 +1,9 @@
+todo:
+fix IDENTIFIER to stop "__" double underscore
+add the error handling for bad names
+
+unknowns:
+comment handling
+precedence
+
+

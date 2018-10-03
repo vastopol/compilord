@@ -366,7 +366,7 @@ ASSIGN            ":="
 }
 
 {IDENTIFIER} {
-    cout << "IDENTIFIER" << " " << yytext << endl;
+    cout << "IDENT" << " " << yytext << endl;
     curpos += yyleng;
 }
 
