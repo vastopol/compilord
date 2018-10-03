@@ -1,0 +1,60 @@
+flex input file structure:
+
+%{
+Declarations
+%}
+Definitions
+%%
+Rules
+%%
+User subroutines
+
+----------------------------------------
+
+flex read from stdin: (user sub at bottom)
+
+int main(int argc, char** argv) {
+    if(argc >= 2) {
+        yyin = fopen(argv[1], "r");
+        if(yyin == NULL) {
+           yyin = stdin;
+        }
+    }
+    else {
+        yyin = stdin;
+    }
+    yylex();
+}
+
+----------------------------------------
+
+flex variables:
+
+* yytext is a null­terminated string containing the text of the lexeme just 
+recognized as a token. This global variable is declared and managed in the 
+lex.yy.c file. Do not modify its contents. The buffer is overwritten with each 
+subsequent token, so you must make your own copy of a lexeme you need to 
+store more permanently.
+
+* yyleng is an integer holding the length of the lexeme stored in yytext. This 
+global variable is declared and managed in the lex.yy.c file. Do not modify its 
+contents.
+
+* yylval is the global variable used to store attributes about the token, e.g. for an 
+integer lexeme it might store the value, for a string literal, the pointer to its 
+characters and so on.  This variable is declared to be of type YYSTYPE, and is 
+usually a union of all the various fields needed for different token types. If you 
+are using a parser generator (such as yacc or bison), it will define this type for 
+you, otherwise, you must provide the definition yourself.  Your scanner actions 
+should appropriately set the contents of the variable for each token.
+
+* yylloc is the global variable that is used to store the location (line and column) 
+of the token.  This variable is declared to be of type YYLTYPE.  Again, the parser 
+generator can provide this or it may be your responsibility.  Your scanner actions 
+should appropriately set the contents of the variable for each token.
+
+* yyin is where the input comes from, can be FILE*, stdin, etc...
+
+----------------------------------------
+
+
