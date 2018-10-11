@@ -1,1 +1,3 @@
 # compilord
+
+lexer,parser,semantic
