@@ -1,0 +1,22 @@
+fix the flex file so it returns TOKENS where it used to just print stuff...
+
+precedence
+
+%tokens arrangement
+
+%types for values arrays
+
+associativity for function calls and array
+
+when handling numbers should it return a NUMBER token && do we modify yylval to hold the data like atoi(yytext)?
+
+what about the UMINUS should that be done the same way as the lab2 calculator?
+
+should IDENTIFIER be a token now? ( how will it know something is and id name, for now i put a temp ID token on its own line )
+
+should there be the END token returned after newlines? ( i put it as a a separate token on its own line right now... )
+
+currently tokens are split up by group: keyword, math, logic, symbol, end
+
+what to do about READ/WRITE is that just using cin/cout?
+

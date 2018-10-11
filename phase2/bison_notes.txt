@@ -1,0 +1,87 @@
+context free grammar rules are setup like
+
+word: pattern
+      | alternative
+      ;
+...
+...
+
+explanations for the setup
+"|" is for other options
+";" ends that rule block
+
+use %start to name the start symbol
+example %start input
+
+then first rule is called input and will appear first followed by the other rules derived form it
+
+input:
+        | input line
+        ;
+
+line:   specification here
+        ...
+        ...
+
+the space immediately after input: is blank on purpose to let empty be accepted.
+then under it is the alternative so input lines can be parsed
+
+----------------------------------------
+
+layout for bison file
+
+%{
+    declarations
+%}
+
+%union{
+    datatypes
+}
+
+%error-verbose
+%start ...
+%token ...
+%token <datatype> ...
+%type <datatype> ...
+%left ...
+%right ...
+%nonassoc ...
+
+%%
+
+cfg rules
+
+input: ...
+
+rule_name: ...
+           | option
+           | option
+           ;
+
+%%
+
+user subroutines
+
+int main()
+{
+    ...
+    yyparse();
+}
+
+----------------------------------------
+
+yyparse() calls yylex()
+
+when run the Makefile bison goes first, and should automatically generate the y.tab.c y.yab.h
+then flex runs and yill make the lex.yy.c file
+
+the file "y.tab.h" must now be included in the flex file;
+#include "y.tab.h"
+
+also some errors with using g++ and not gcc can be fixed in bison file by:
+extern FILE* yyin; /* multiple declarations of yyin */
+extern int yylex(); /* ‘yylex’ was not declared in this scope */
+
+----------------------------------------
+
+
