@@ -39,8 +39,11 @@ NUMBER      {DIGIT}+
 LETTER      [a-zA-Z]
 IDENTIFIER  {LETTER}({LETTER}|{DIGIT}|([_])({LETTER}|{DIGIT}))*
 COMMENT     [#][#].*\n
-IDERR1      {NUMBER}{LETTER}
-IDERR2      {IDENTIFIER}[_]+
+ERR1        {NUMBER}{LETTER}
+ERR2        {IDENTIFIER}[_]+
+ERR3        [_]+{IDENTIFIER}
+ERR4        [_]+{NUMBER}
+ERR5        {NUMBER}[_]+
 
     /*----- Reserved Words ----- */
 
@@ -364,7 +367,7 @@ ASSIGN            ":="
     /* ----- Identifiers && Numbers ----- */
 
 {NUMBER} {
-    cout << "NUMBER" << " " << yytext << endl;
+    cout << "NUMBER" << " " << atoi(yytext) << endl;
     curpos += yyleng;
 }
 
@@ -392,15 +395,33 @@ ASSIGN            ":="
 
     /* ----- Error Catching ----- */
 
-{IDERR1} {
+{ERR1} {
     /* Error: Identifier must begin with letter */
     printf("Error at line %d, column %d: identifier \"%s\" must begin with a letter\n", curline, curpos, yytext);
     exit(0);
 }
 
-{IDERR2} {
+{ERR2} {
     /* Error: Identifier cannot end with an underscore */
     printf("Error at line %d, column %d: identifier \"%s\" cannot end with an underscore\n", curline, curpos, yytext);
+    exit(0);
+}
+
+{ERR3} {
+    /* Error: Identifier cannot begin with an underscore */
+    printf("Error at line %d, column %d: identifier \"%s\" cannot begin with an underscore\n", curline, curpos, yytext);
+    exit(0);
+}
+
+{ERR4} {
+    /* Error: Number cannot begin with an underscore */
+    printf("Error at line %d, column %d: number \"%s\" cannot begin with an underscore\n", curline, curpos, yytext);
+    exit(0);
+}
+
+{ERR5} {
+    /* Error: Number cannot end with an underscore */
+    printf("Error at line %d, column %d: number \"%s\" cannot end with an underscore\n", curline, curpos, yytext);
     exit(0);
 }
 
