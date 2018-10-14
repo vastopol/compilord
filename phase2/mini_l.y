@@ -1,6 +1,6 @@
     /*
     ----------------------------------------
-    Syntax Analyzer/Parser for MINI-L
+    Syntax Analyzer/Parser for MINI-L (v2)
     Sean Richardson
     ----------------------------------------
     */
@@ -14,6 +14,13 @@
 
 
 %{
+
+/* C includes */
+#include <cstdio>
+
+/* C++ includes */
+#include <iostream>
+using namespace std;
 
 /* externals in flex file */
 extern int curline;
@@ -29,33 +36,29 @@ void yyerror(const char *msg);
 %}
 
 %union{
-    int ival;
+    int    ival;
+    char*  chval;
 }
 
 %error-verbose
 
-%start input
+%start program
 
 %token FUNCTION BEGIN_PARAMS END_PARAMS BEGIN_LOCALS END_LOCALS BEGIN_BODY END_BODY INTEGER ARRAY OF IF THEN ENDIF ELSE WHILE DO FOREACH IN BEGINLOOP ENDLOOP CONTINUE READ WRITE AND OR NOT TRUE FALSE RETURN
 %token ADD SUB MULT DIV MOD
 %token EQ NEQ LT GT LTE GTE
 %token SEMICOLON COLON COMMA L_PAREN R_PAREN L_SQUARE_BRACKET R_SQUARE_BRACKET ASSIGN
 
-%token END
-%token ID
-
+%token <chval> ID
 %token <ival> NUMBER
 %type  <ival> exp
 
 %left PLUS MINUS
 %left MULT DIV MOD
 %left EQ NEQ LT GT LTE GTE
-
 %left AND OR
 %right NOT
 %right ASSIGN
-%right UMINUS
-
 
 %%
 
@@ -66,15 +69,35 @@ void yyerror(const char *msg);
     ----------------------------------------
     */
 
-input:
-		| input line
-		;
 
-line:	exp END { printf("\t%s\n", $1); }
-		;
+program&:      /* empty */
+            | function program
+            ;
 
-exp:	NUMBER { $$ = $1; }
-        ;
+function:     /* empty */
+            | FUNCTION ID SEMICOLON BEGIN_PARAMS declare SEMICOLON END_PARAMS BEGIN_LOCALS declare SEMICOLON END_LOCALS BEGIN_BODY statement SEMICOLON END_BODY
+              {}
+		    ;
+
+declare:
+
+statement:
+
+bool-exp:
+
+rel-a-exp:
+
+rel-exp:
+
+comp:
+
+exp:
+
+mult-exp:
+
+term:
+
+var:
 
 
 %%

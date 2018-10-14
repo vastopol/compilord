@@ -3,4 +3,4 @@ all:
 	flex mini_l.lex
 	g++ -o parser y.tab.c lex.yy.c -lfl
 clean:
-	rm parser lex.yy.c y.tab.*
+	rm parser lex.yy.c y.output y.tab.*

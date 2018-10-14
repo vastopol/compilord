@@ -14,9 +14,25 @@ what about the UMINUS should that be done the same way as the lab2 calculator?
 
 should IDENTIFIER be a token now? ( how will it know something is and id name, for now i put a temp ID token on its own line )
 
-should there be the END token returned after newlines? ( i put it as a a separate token on its own line right now... )
+should there be the END token returned after newlines like in the lab?
 
-currently tokens are split up by group: keyword, math, logic, symbol, end
+currently tokens are split up by group: keyword, math, logic, symbol
 
 what to do about READ/WRITE is that just using cin/cout?
 
+figure out how to use c++ strings for the identifiers and other stuff because char* is awful to use, probably g++ -std=c++11
+
+parser rule layout
+
+program
+function
+declaration
+statement
+bool-expr
+relation-and-expr
+relation-expr
+comp
+expression
+multiplicative-expr
+term
+var

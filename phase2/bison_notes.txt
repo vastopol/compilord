@@ -1,6 +1,6 @@
 context free grammar rules are setup like
 
-word: pattern
+word:   pattern
       | alternative
       ;
 ...
@@ -13,17 +13,17 @@ explanations for the setup
 use %start to name the start symbol
 example %start input
 
-then first rule is called input and will appear first followed by the other rules derived form it
+then the first rule is called input and will appear first followed by the other rules derived from it
 
-input:
-        | input line
+input:    /* empty */ {action}
+        | line {action}
         ;
 
-line:   specification here
+line:   specification here {action}
         ...
         ...
 
-the space immediately after input: is blank on purpose to let empty be accepted.
+the space immediately after input: is blank on purpose to let empty be accepted. ( might be able to use %empty, but not sure how that works )
 then under it is the alternative so input lines can be parsed
 
 ----------------------------------------

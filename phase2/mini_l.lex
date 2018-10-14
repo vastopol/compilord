@@ -1,6 +1,6 @@
     /*
     ----------------------------------------
-    Lexical Analyzer/Scanner for MINI-L
+    Lexical Analyzer/Scanner for MINI-L (v2)
     Sean Richardson
     ----------------------------------------
     */
@@ -15,10 +15,11 @@
 
 %{
 
-#include <iostream>
-
+/* Bison includes */
 #include "y.tab.h"
 
+/* C++ includes */
+#include <iostream>
 using namespace std;
 
 int curline = 1;
@@ -41,8 +42,11 @@ NUMBER      {DIGIT}+
 LETTER      [a-zA-Z]
 IDENTIFIER  {LETTER}({LETTER}|{DIGIT}|([_])({LETTER}|{DIGIT}))*
 COMMENT     [#][#].*\n
-IDERR1      {NUMBER}{LETTER}
-IDERR2      {IDENTIFIER}[_]+
+ERR1        {NUMBER}{LETTER}
+ERR2        {IDENTIFIER}[_]+
+ERR3        [_]+{IDENTIFIER}
+ERR4        [_]+{NUMBER}
+ERR5        {NUMBER}[_]+
 
     /*----- Reserved Words ----- */
 
@@ -154,181 +158,225 @@ ASSIGN            ":="
 
 {INTEGER} {
     curpos += yyleng;
+    return INTEGER;
 }
 
 {ARRAY} {
     curpos += yyleng;
+    return ARRAY;
 }
 
 {OF} {
     curpos += yyleng;
+    return OF;
 }
 
 {IF} {
     curpos += yyleng;
+    return IF;
 }
 
 {THEN} {
     curpos += yyleng;
+    return THEN;
 }
 
 {ENDIF} {
     curpos += yyleng;
+    return ENDIF;
 }
 
 {ELSE} {
     curpos += yyleng;
+    return ELSE;
 }
 
 {WHILE} {
     curpos += yyleng;
+    return WHILE;
 }
 
 {DO} {
     curpos += yyleng;
+    return DO;
 }
 
 {FOREACH} {
     curpos += yyleng;
+    return FOREACH;
 }
 
 {IN} {
     curpos += yyleng;
+    return IN;
 }
 
 {BEGINLOOP} {
     curpos += yyleng;
+    return BEGINLOOP;
 }
 
 {ENDLOOP} {
     curpos += yyleng;
+    return ENDLOOP;
 }
 
 {CONTINUE} {
     curpos += yyleng;
+    return CONTINUE;
 }
 
 {READ} {
     curpos += yyleng;
+    return READ;
 }
 
 {WRITE} {
     curpos += yyleng;
+    return WRITE;
 }
 
 {AND} {
     curpos += yyleng;
+    return AND;
 }
 
 {OR} {
     curpos += yyleng;
+    return OR;
 }
 
 {NOT} {
     curpos += yyleng;
+    return NOT;
 }
 
 {TRUE} {
     curpos += yyleng;
+    return TRUE;
 }
 
 {FALSE} {
     curpos += yyleng;
+    return FALSE;
 }
 
 {RETURN} {
     curpos += yyleng;
+    return RETURN;
 }
 
     /* ----- Arithmetic Operators ----- */
 
 {ADD} {
     curpos += yyleng;
+    return ADD;
 }
 
 {SUB} {
     curpos += yyleng;
+    return SUB;
 }
 
 {MULT} {
     curpos += yyleng;
+    return MULT;
 }
 
 {DIV} {
     curpos += yyleng;
+    return DIV;
 }
 
 {MOD} {
     curpos += yyleng;
+    return MOD;
 }
 
     /* ----- Comparison Operators ----- */
 
 {EQ} {
     curpos += yyleng;
+    return EQ;
 }
 
 {NEQ} {
     curpos += yyleng;
+    return NEQ;
 }
 
 {LT} {
     curpos += yyleng;
+    return LT;
 }
 
 {GT} {
     curpos += yyleng;
+    return GT;
 }
 
 {LTE} {
     curpos += yyleng;
+    return LTE;
 }
 
 {GTE} {
     curpos += yyleng;
+    return GTE;
 }
 
     /* ----- Special Symbols ----- */
 
 {SEMICOLON} {
     curpos += yyleng;
+    return SEMICOLON;
 }
 
 {COLON} {
     curpos += yyleng;
+    return COLON;
 }
 
 {COMMA} {
     curpos += yyleng;
+    return COMMA;
 }
 
 {L_PAREN} {
     curpos += yyleng;
+    return L_PAREN;
 }
 
 {R_PAREN} {
     curpos += yyleng;
+    return R_PAREN;
 }
 
 {L_SQUARE_BRACKET} {
     curpos += yyleng;
+    return L_SQUARE_BRACKET;
 }
 
 {R_SQUARE_BRACKET} {
     curpos += yyleng;
+    return R_SQUARE_BRACKET;
 }
 
 {ASSIGN} {
     curpos += yyleng;
+    return ASSIGN;
 }
 
     /* ----- Identifiers && Numbers ----- */
 
 {NUMBER} {
+    yylval.ival = atoi(yytext);
     curpos += yyleng;
+    return NUMBER;
 }
 
 {IDENTIFIER} {
+    yylval.chval = yytext;
     curpos += yyleng;
     return ID; /* Not actually sure if this needs to be here or not... */
 }
@@ -343,7 +391,6 @@ ASSIGN            ":="
 "\n" {
     curline++;
     curpos = 1;
-    return END; /* Not actually sure if this needs to be here or not... */
 }
 
 {COMMENT} {
@@ -353,21 +400,39 @@ ASSIGN            ":="
 
     /* ----- Error Catching ----- */
 
-{IDERR1} {
+{ERR1} {
     /* Error: Identifier must begin with letter */
-    printf("Error at line %d, column %d: identifier \"%s\" must begin with a letter\n", curline, curpos, yytext);
+    printf("Lexer error at line %d, column %d: identifier \"%s\" must begin with a letter\n", curline, curpos, yytext);
     exit(0);
 }
 
-{IDERR2} {
+{ERR2} {
     /* Error: Identifier cannot end with an underscore */
-    printf("Error at line %d, column %d: identifier \"%s\" cannot end with an underscore\n", curline, curpos, yytext);
+    printf("Lexer error at line %d, column %d: identifier \"%s\" cannot end with an underscore\n", curline, curpos, yytext);
+    exit(0);
+}
+
+{ERR3} {
+    /* Error: Identifier cannot begin with an underscore */
+    printf("Lexer error at line %d, column %d: identifier \"%s\" cannot begin with an underscore\n", curline, curpos, yytext);
+    exit(0);
+}
+
+{ERR4} {
+    /* Error: Number cannot begin with an underscore */
+    printf("Lexer error at line %d, column %d: number \"%s\" cannot begin with an underscore\n", curline, curpos, yytext);
+    exit(0);
+}
+
+{ERR5} {
+    /* Error: Number cannot end with an underscore */
+    printf("Lexer error at line %d, column %d: number \"%s\" cannot end with an underscore\n", curline, curpos, yytext);
     exit(0);
 }
 
 . {
     /* Error: Unrecognized Symbol */
-    printf("Error at line %d, column %d: unrecognized symbol \"%s\"\n", curline, curpos, yytext);
+    printf("Lexer error at line %d, column %d: unrecognized symbol \"%s\"\n", curline, curpos, yytext);
     exit(0);
 }
 
