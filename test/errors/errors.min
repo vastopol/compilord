@@ -1,0 +1,36 @@
+function fibonacci;
+beginparams
+	k : integer;
+endparams
+beginlocals
+	k : integer;
+	comma : integer;
+        a : array[1000] of integer;
+        b : array[-1] of integer;
+endlocals
+beginbody
+##	if (l <= 1) then return 1; endif;
+        a := 0;
+	return fibonacci1(k - 1) + fibonacci(k - 2);
+endbody
+
+function poop;
+beginparams
+endparams
+beginlocals
+	n : integer;
+	fib_n : integer;
+endlocals
+beginbody
+	read n;
+	fib_n[0] := fibonacci(n);
+        foreach is_prime in k
+        beginloop
+   	     if is_prime == 0 then
+		write i;
+             endif;
+	     i := i + 1;
+        endloop;
+        continue;
+	write fib_n;
+endbody

@@ -1,0 +1,33 @@
+function potato;
+beginparams
+    n : integer;
+    l : integer;
+    k : integer;
+    none : array [0] of integer;
+endparams
+beginlocals
+endlocals
+beginbody
+    n := 10 + 3 * 3 * 11 * n;
+    continue;
+    return n[1];
+endbody
+
+function notmain;
+beginparams
+endparams
+beginlocals
+    n : integer;
+    fib_n : integer;
+    stuffs : array [20] of integer;
+endlocals
+beginbody
+    n := 3 * - 5 + - 2;
+    write n;
+    n := - 2 + 3 * - 5;
+    write n;
+    n := 10 + 3 * 4;
+    write n, stuffs;
+    if (n <= 1) then fib_n := 1; else fib_n := potato(n); endif;
+    write n, fib_n;
+endbody
