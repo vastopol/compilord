@@ -49,7 +49,7 @@ void yyerror(const char *msg);
 %token EQ NEQ LT GT LTE GTE
 %token SEMICOLON COLON COMMA L_PAREN R_PAREN L_SQUARE_BRACKET R_SQUARE_BRACKET ASSIGN
 
-%token <chval> ID
+%token <chval> IDENT
 %token <ival> NUMBER
 %type  <ival> exp
 
@@ -70,16 +70,21 @@ void yyerror(const char *msg);
     */
 
 
-program&:      /* empty */
+program:      /* empty */ {}
             | function program
             ;
 
 function:     /* empty */
-            | FUNCTION ID SEMICOLON BEGIN_PARAMS declare SEMICOLON END_PARAMS BEGIN_LOCALS declare SEMICOLON END_LOCALS BEGIN_BODY statement SEMICOLON END_BODY
+            | FUNCTION IDENT SEMICOLON BEGIN_PARAMS declares END_PARAMS BEGIN_LOCALS declares END_LOCALS BEGIN_BODY statements END_BODY
               {}
 		    ;
 
+declares:      /* empty */
+            ;
+
 declare:
+
+statements:
 
 statement:
 

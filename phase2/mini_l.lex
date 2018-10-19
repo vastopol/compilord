@@ -378,7 +378,7 @@ ASSIGN            ":="
 {IDENTIFIER} {
     yylval.chval = yytext;
     curpos += yyleng;
-    return ID; /* Not actually sure if this needs to be here or not... */
+    return IDENT; /* Not actually sure if this needs to be here or not... */
 }
 
     /* ----- Whitespace ----- */

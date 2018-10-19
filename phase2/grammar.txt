@@ -1,0 +1,65 @@
+program:        epsilon
+              | function program
+              ;
+
+function:       FUNCTION IDENT SEMICOLON BEGIN_PARAMS declares END_PARAMS BEGIN_LOCALS declares END_LOCALS BEGIN_BODY statements END_BODY
+              ;
+
+declares:       epsilon
+              | declare SEMICOLON declares
+              ;
+
+declare:        identifiers COLON INTEGER
+              | identifiers COLON ARRAY OF L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER
+              ;
+
+identifiers:    IDENT
+              | IDENT COMMA identifiers
+              ;
+
+statements:     statement SEMICOLON
+              | statement SEMICOLON statements
+              ;
+
+statement:      var ASSIGN expression
+              | IF bool-expr THEN statement else ENDIF
+              | WHILE bool-expr BEGINLOOP statements ENDLOOP
+              | DO BEGINLOOP statements ENDLOOP WHILE bool-expr
+              | READ vars
+              | WRITE vars
+              | CONTINUE
+              | RETURN expression
+              ;
+
+else:           epsilon
+              | ELSE statements
+              ;
+
+bool-expr:      rel-a-expr
+              | rel-a-expr OR rel-a-expr
+              ;
+
+rel-a-expr:     rel-expr
+              | rel-expr AND rel-expr
+              ;
+
+rel-expr:
+              ;
+
+comp:
+              ;
+
+expression:
+              ;
+
+mult-expr:
+              ;
+
+term:
+              ;
+
+vars:
+              ;
+
+var:
+              ;
