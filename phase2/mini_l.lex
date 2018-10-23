@@ -15,12 +15,10 @@
 
 %{
 
+#include "heading.h"
+
 /* Bison includes */
 #include "y.tab.h"
-
-/* C++ includes */
-#include <iostream>
-using namespace std;
 
 int curline = 1;
 int curpos = 1;
@@ -376,9 +374,9 @@ ASSIGN            ":="
 }
 
 {IDENTIFIER} {
-    yylval.chval = yytext;
+    yylval.cval = yytext;
     curpos += yyleng;
-    return IDENT; /* Not actually sure if this needs to be here or not... */
+    return IDENT;
 }
 
     /* ----- Whitespace ----- */

@@ -1,65 +1,116 @@
-program:        epsilon
-              | function program
-              ;
+MINI-L Grammar
 
-function:       FUNCTION IDENT SEMICOLON BEGIN_PARAMS declares END_PARAMS BEGIN_LOCALS declares END_LOCALS BEGIN_BODY statements END_BODY
-              ;
+program
+    : functions
+    ;
 
-declares:       epsilon
-              | declare SEMICOLON declares
-              ;
+functions
+    : epsilon
+    | function functions
 
-declare:        identifiers COLON INTEGER
-              | identifiers COLON ARRAY OF L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER
-              ;
+function
+    : FUNCTION identifiers SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY
+    ;
 
-identifiers:    IDENT
-              | IDENT COMMA identifiers
-              ;
+declarations
+    : epsilon
+    | declaration SEMICOLON declarations
+    ;
 
-statements:     statement SEMICOLON
-              | statement SEMICOLON statements
-              ;
+declaration
+    : identifiers COLON INTEGER
+    | identifiers COLON ARRAY OF L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER
+    ;
 
-statement:      var ASSIGN expression
-              | IF bool-expr THEN statement else ENDIF
-              | WHILE bool-expr BEGINLOOP statements ENDLOOP
-              | DO BEGINLOOP statements ENDLOOP WHILE bool-expr
-              | READ vars
-              | WRITE vars
-              | CONTINUE
-              | RETURN expression
-              ;
+identifiers
+    : IDENT
+    | IDENT COMMA identifiers
+    ;
 
-else:           epsilon
-              | ELSE statements
-              ;
+statements
+    : epsilon
+    | statement SEMICOLON statements
+    ;
 
-bool-expr:      rel-a-expr
-              | rel-a-expr OR rel-a-expr
-              ;
+statement
+    : var ASSIGN expression
+    | IF bool-expr THEN statements ENDIF
+    | IF bool-expr THEN statements ELSE statements ENDIF
+    | WHILE bool-expr BEGINLOOP statements ENDLOOP
+    | DO BEGINLOOP statements ENDLOOP WHILE bool-expr
+    | READ vars
+    | WRITE vars
+    | CONTINUE
+    | RETURN expression
+    ;
 
-rel-a-expr:     rel-expr
-              | rel-expr AND rel-expr
-              ;
+bool-expr
+    : relation-and-expr
+    | relation-and-expr OR relation-and-expr
+    ;
 
-rel-expr:
-              ;
+relation-and-expr
+    : relation-expr
+    | relation-expr AND relation-expr
+    ;
 
-comp:
-              ;
+relation-expr
+    : expression comp expression
+    | TRUE
+    | FALSE
+    | L_PAREN bool-expr R_PAREN
+    | NOT expression comp expression
+    | NOT TRUE
+    | NOT FALSE
+    | NOT L_PAREN bool-expr R_PAREN
+    ;
 
-expression:
-              ;
+comp
+    : EQ
+    | NEQ
+    | GT
+    | LT
+    | GTE
+    | LTE
+    ;
 
-mult-expr:
-              ;
+expressions
+    : expression
+    | expression COMMA expressions
+    ;
 
-term:
-              ;
+expression
+    : mult-expr ADD mult-expr
+    | mult-expr SUB mult-expr
+    ;
 
-vars:
-              ;
+mult-expr
+    : term mult-exprs
+    ;
 
-var:
-              ;
+mult-exprs
+    : epsilon
+    | MULT term mult-exprs
+    | DIV  term mult-exprs
+    | MOD  term mult-exprs
+    ;
+
+term
+    : var
+    | NUMBER
+    | L_PAREN expression R_PAREN
+    | identifiers L_PAREN expressions R_PAREN
+    | SUB var
+    | SUB NUMBER
+    | SUB L_PAREN expression R_PAREN
+    ;
+
+vars
+    : var
+    | var COMMA vars
+    ;
+
+var
+    : identifiers
+    | identifiers L_SQUARE_BRACKET expression R_SQUARE_BRACKET
+    ;
