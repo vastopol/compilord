@@ -28,12 +28,14 @@ extern int yylex(); /* ‘yylex’ was not declared in this scope */
 /* user subroutines */
 void yyerror(const char *msg);
 
+void yyerror(string);
+
 %}
 
 %union{
-    int     ival; /* currently where numbers are written to in flex file*/
-    char*   cval; /* currently where identifiers are written to in flex file*/
+    int     ival;
     string* sval;
+    /* char*   cval; */ /* for raw char array yytext */
 }
 
 %error-verbose
@@ -59,16 +61,36 @@ void yyerror(const char *msg);
 %token <ival> NUMBER
 %type  <ival> expression
 
-%left PLUS MINUS
-%left MULT DIV MOD
-%left EQ NEQ LT GT LTE GTE
-%left AND OR
-%right NOT
-%right ASSIGN
-
     */
 
+%right ASSIGN
+%left OR
+%left AND
+%right NOT
+%left NEQ
+%left EQ
+%left GTE
+%left GT
+%left LTE
+%left LT
+%left MINUS
+%left PLUS
+%left MOD
+%left DIV
+%left MULT
+%right UMINUS
+%left R_SQUARE_BRACKET
+%left L_SQUARE_BRACKET
+%left R_PAREN
+%left L_PAREN
+
 %%
+
+    /*
+    ----------------------------------------
+    Grammar Rules
+    ----------------------------------------
+    */
 
 
 program
@@ -104,7 +126,10 @@ declaration
 
 identifiers
     : IDENT
+        /* { cout << "ident -> IDENT " << string(yylval.cval) << endl; } */
+        { cout << "ident -> IDENT " << *yylval.sval << endl; }
     | IDENT COMMA identifiers
+        { cout << "identifiers -> ident COMMA identifiers" << endl; }
     ;
 
 statements
@@ -116,14 +141,23 @@ statements
 
 statement
     : var ASSIGN expression
+        { cout << "statement -> var ASSIGN expression" << endl; }
     | IF bool-expr THEN statements ENDIF
+        { cout << "statement -> IF bool_exp THEN statements ENDIF" << endl; }
     | IF bool-expr THEN statements ELSE statements ENDIF
+        { cout << "statement -> IF bool_exp THEN statements ELSE statements ENDIF" << endl; }
     | WHILE bool-expr BEGINLOOP statements ENDLOOP
+        { cout << "statement -> WHILE bool_exp BEGINLOOP statements ENDLOOP" << endl; }
     | DO BEGINLOOP statements ENDLOOP WHILE bool-expr
+        { cout << "statement -> DO BEGINLOOP statements ENDLOOP WHILE bool_exp" << endl; }
     | READ vars
+        { cout << "statement -> READ vars" << endl; }
     | WRITE vars
+        { cout << "statement -> WRITE vars" << endl; }
     | CONTINUE
+        { cout << "statement -> CONTINUE" << endl; }
     | RETURN expression
+        { cout << "statement -> RETURN expression" << endl; }
     ;
 
 bool-expr
@@ -189,12 +223,16 @@ term
 
 vars
     : var
+        { cout << "vars -> var" << endl; }
     | var COMMA vars
+        { cout << "vars -> var COMMA vars" << endl; }
     ;
 
 var
     : identifiers
+        { cout << "var -> ident" << endl; }
     | identifiers L_SQUARE_BRACKET expression R_SQUARE_BRACKET
+        { cout << "var -> ident L_SQUARE_BRACKET expression R_SQUARE_BRACKET" << endl; }
     ;
 
 
@@ -237,7 +275,12 @@ int main(int argc, char** argv)
 
 void yyerror(const char *msg)
 {
-   printf("parser yyerror at Line %d, position %d: %s\n", curline, curpos, msg);
+   yyerror(string(msg));
+}
+
+void yyerror(string s)
+{
+   cout << "parser yyerror at Line " << curline << ", position " << curpos << ": " << s << endl;
 }
 
 

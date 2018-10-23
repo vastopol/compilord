@@ -374,7 +374,8 @@ ASSIGN            ":="
 }
 
 {IDENTIFIER} {
-    yylval.cval = yytext;
+    /* yylval.cval = yytext; */
+    yylval.sval = new string(yytext);
     curpos += yyleng;
     return IDENT;
 }

@@ -1,0 +1,12 @@
+ident -> IDENT f2
+declarations -> epsilon
+ident -> IDENT my_a
+declaration -> identifiers COLON INTEGER
+ident -> IDENT my_b
+declaration -> identifiers COLON INTEGER
+declarations -> epsilon
+declarations -> declaration SEMICOLON declarations
+declarations -> declaration SEMICOLON declarations
+ident -> IDENT my_a
+var -> ident
+parser yyerror at Line 12, position 15: syntax error, unexpected SEMICOLON, expecting ADD or SUB
