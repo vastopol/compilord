@@ -95,7 +95,7 @@ void yyerror(string);
 
 program
     : functions
-        { cout << "program -> functions" << endl; }
+        { cout << "prog_start -> functions" << endl; }
     ;
 
 functions
@@ -120,7 +120,7 @@ declarations
 declaration
     : identifiers COLON INTEGER
         { cout << "declaration -> identifiers COLON INTEGER" << endl; }
-    | identifiers COLON ARRAY OF L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER
+    | identifiers COLON ARRAY L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER
         { cout << "declaration -> identifiers COLON ARRAY L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER" << endl; }
     ;
 
@@ -162,18 +162,25 @@ statement
 
 bool-expr
     : relation-and-expr
+        { cout << "bool_exp -> relation_and_exp" << endl; }
     | relation-and-expr OR relation-and-expr
+        { cout << "bool_exp -> relation_and_exp OR relation_and_exp" << endl; }
     ;
 
 relation-and-expr
     : relation-expr
-    | relation-expr AND relation-expr
+        { cout << "relation_and_exp -> relation_exp" << endl; }
+    | relation-expr AND relation-and-expr
+        { cout << "relation_and_exp -> relation_exp AND relation_exp" << endl; }
     ;
 
 relation-expr
     : expression comp expression
+        { cout << "relation_exp -> expression comp expression" << endl; }
     | TRUE
+        { cout << "relation_exp -> TRUE" << endl; }
     | FALSE
+        { cout << "relation_exp -> FALSE" << endl; }
     | L_PAREN bool-expr R_PAREN
     | NOT expression comp expression
     | NOT TRUE
@@ -183,38 +190,52 @@ relation-expr
 
 comp
     : EQ
+        { cout << "comp -> EQ" << endl; }
     | NEQ
+        { cout << "comp -> NEQ" << endl; }
     | GT
+        { cout << "comp -> GT" << endl; }
     | LT
+        { cout << "comp -> LT" << endl; }
     | GTE
+        { cout << "comp -> GTE" << endl; }
     | LTE
+        { cout << "comp -> LTE" << endl; }
     ;
 
+    /* ???? maybe need for terms ???? */
 expressions
     : expression
     | expression COMMA expressions
     ;
 
 expression
-    : mult-expr ADD mult-expr
-    | mult-expr SUB mult-expr
+    : mult-expr
+        { cout << "expression -> multiplicative_expression" << endl; }
+    | mult-expr ADD expression
+        { cout << "expression -> multiplicative_expression ADD multiplicative_expression" << endl; }
+    | mult-expr SUB expression
+        { cout << "expression -> multiplicative_expression SUB multiplicative_expression" << endl; }
     ;
 
 mult-expr
-    : term mult-exprs
-    ;
-
-mult-exprs
-    :
-    | MULT term mult-exprs
-    | DIV  term mult-exprs
-    | MOD  term mult-exprs
+    : term
+        { cout << "multiplicative_expression -> term" << endl; }
+    | term MULT term
+        { cout << "multiplicative_expression -> term MULT term" << endl; }
+    | term DIV term
+        { cout << "multiplicative_expression -> term DIV term" << endl; }
+    | term MOD term
+        { cout << "multiplicative_expression -> term MOD term" << endl; }
     ;
 
 term
     : var
+        { cout << "term -> var" << endl; }
     | NUMBER
+        { cout << "term -> NUMBER" << endl; }
     | L_PAREN expression R_PAREN
+        { cout << "term -> L_PAREN expression R_PAREN" << endl; }
     | identifiers L_PAREN expressions R_PAREN
     | SUB var
     | SUB NUMBER

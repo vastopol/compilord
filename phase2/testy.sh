@@ -2,5 +2,5 @@
 
 make clean
 make
-./parser "$1" > test2/tmp.parse
+./parser "$1" > p2tests/tmp.parse
 make clean

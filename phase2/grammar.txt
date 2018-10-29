@@ -19,7 +19,7 @@ declarations
 
 declaration
     : identifiers COLON INTEGER
-    | identifiers COLON ARRAY OF L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER
+    | identifiers COLON ARRAY L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER
     ;
 
 identifiers
@@ -51,7 +51,7 @@ bool-expr
 
 relation-and-expr
     : relation-expr
-    | relation-expr AND relation-expr
+    | relation-expr AND relation-and-expr
     ;
 
 relation-expr
@@ -80,19 +80,16 @@ expressions
     ;
 
 expression
-    : mult-expr ADD mult-expr
-    | mult-expr SUB mult-expr
+    : mult-expr
+    | mult-expr ADD expression
+    | mult-expr SUB expression
     ;
 
 mult-expr
-    : term mult-exprs
-    ;
-
-mult-exprs
-    : epsilon
-    | MULT term mult-exprs
-    | DIV  term mult-exprs
-    | MOD  term mult-exprs
+    : term
+    | term MULT term
+    | term DIV  term
+    | term MOD  term
     ;
 
 term
@@ -114,3 +111,10 @@ var
     : identifiers
     | identifiers L_SQUARE_BRACKET expression R_SQUARE_BRACKET
     ;
+
+
+/* ---------------------------------------- */
+
+not sure if "expressions" is needed
+not sure how to output the last 4 cases for "term" including negatives,
+not sure how to handle "relation_exp" with not included
