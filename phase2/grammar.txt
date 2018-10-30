@@ -27,6 +27,10 @@ identifiers
     | IDENT COMMA identifiers
     ;
 
+identifier
+    : IDENT
+    ;
+
 statements
     : epsilon
     | statement SEMICOLON statements
@@ -75,7 +79,8 @@ comp
     ;
 
 expressions
-    : expression
+    : epsilon
+    | expression
     | expression COMMA expressions
     ;
 
@@ -115,6 +120,5 @@ var
 
 /* ---------------------------------------- */
 
-not sure if "expressions" is needed
-not sure how to output the last 4 cases for "term" including negatives,
-not sure how to handle "relation_exp" with not included
+identifier is just for functions to make sure 1 name only
+expressions is just for terms having commas

@@ -106,7 +106,7 @@ functions
     ;
 
 function
-    : FUNCTION identifiers SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY
+    : FUNCTION identifier SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY
         { cout << "function -> FUNCTION IDENT SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY" << endl; }
     ;
 
@@ -130,6 +130,12 @@ identifiers
         { cout << "ident -> IDENT " << *yylval.sval << endl; }
     | IDENT COMMA identifiers
         { cout << "identifiers -> ident COMMA identifiers" << endl; }
+    ;
+
+identifier
+    : IDENT
+        /* { cout << "ident -> IDENT " << string(yylval.cval) << endl; } */
+        { cout << "ident -> IDENT " << *yylval.sval << endl; }
     ;
 
 statements
@@ -182,10 +188,15 @@ relation-expr
     | FALSE
         { cout << "relation_exp -> FALSE" << endl; }
     | L_PAREN bool-expr R_PAREN
+        { cout << "relation_exp -> L_PAREN bool-exp R_PAREN" << endl; }
     | NOT expression comp expression
+        { cout << "relation_exp -> NOT expression comp expression" << endl; }
     | NOT TRUE
+        { cout << "relation_exp -> NOT TRUE" << endl; }
     | NOT FALSE
+        { cout << "relation_exp -> NOT FALSE" << endl; }
     | NOT L_PAREN bool-expr R_PAREN
+        { cout << "relation_exp -> NOT L_PAREN bool-exp R_PAREN" << endl; }
     ;
 
 comp
@@ -203,10 +214,13 @@ comp
         { cout << "comp -> LTE" << endl; }
     ;
 
-    /* ???? maybe need for terms ???? */
 expressions
-    : expression
+    :   /* empty */
+        { cout << "expression -> epsilon" << endl; }
+    | expression
+        { cout << "expressions -> expression" << endl; }
     | expression COMMA expressions
+        { cout << "expressions -> expression COMMA expressions" << endl; }
     ;
 
 expression
@@ -233,13 +247,17 @@ term
     : var
         { cout << "term -> var" << endl; }
     | NUMBER
-        { cout << "term -> NUMBER" << endl; }
+        { cout << "term -> NUMBER" << " " << yylval.ival << endl; }
     | L_PAREN expression R_PAREN
         { cout << "term -> L_PAREN expression R_PAREN" << endl; }
     | identifiers L_PAREN expressions R_PAREN
+        { cout << "term -> identifiers L_PAREN expressions R_PAREN" << endl; }
     | SUB var
+        { cout << "term -> SUB var" << endl; }
     | SUB NUMBER
+        { cout << "term -> SUB NUMBER" << " " << yylval.ival << endl; }
     | SUB L_PAREN expression R_PAREN
+        { cout << "term -> L_PAREN expression R_PAREN" << endl; }
     ;
 
 vars
