@@ -258,6 +258,8 @@ term
         { cout << "term -> SUB NUMBER" << " " << yylval.ival << endl; }
     | SUB L_PAREN expression R_PAREN
         { cout << "term -> L_PAREN expression R_PAREN" << endl; }
+    | SUB identifiers L_PAREN expressions R_PAREN
+        { cout << "term -> identifiers L_PAREN expressions R_PAREN" << endl; }
     ;
 
 vars

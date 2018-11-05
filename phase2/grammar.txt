@@ -105,6 +105,7 @@ term
     | SUB var
     | SUB NUMBER
     | SUB L_PAREN expression R_PAREN
+    | SUB identifiers L_PAREN expressions R_PAREN
     ;
 
 vars
