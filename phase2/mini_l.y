@@ -125,10 +125,10 @@ declaration
     ;
 
 identifiers
-    : IDENT
+    : identifier
         /* { cout << "ident -> IDENT " << string(yylval.cval) << endl; } */
         { cout << "ident -> IDENT " << *yylval.sval << endl; }
-    | IDENT COMMA identifiers
+    | identifier COMMA identifiers
         { cout << "identifiers -> ident COMMA identifiers" << endl; }
     ;
 
@@ -250,7 +250,7 @@ term
         { cout << "term -> NUMBER" << " " << yylval.ival << endl; }
     | L_PAREN expression R_PAREN
         { cout << "term -> L_PAREN expression R_PAREN" << endl; }
-    | identifiers L_PAREN expressions R_PAREN
+    | identifier L_PAREN expressions R_PAREN
         { cout << "term -> identifiers L_PAREN expressions R_PAREN" << endl; }
     | SUB var
         { cout << "term -> SUB var" << endl; }
@@ -258,7 +258,7 @@ term
         { cout << "term -> SUB NUMBER" << " " << yylval.ival << endl; }
     | SUB L_PAREN expression R_PAREN
         { cout << "term -> L_PAREN expression R_PAREN" << endl; }
-    | SUB identifiers L_PAREN expressions R_PAREN
+    | SUB identifier L_PAREN expressions R_PAREN
         { cout << "term -> identifiers L_PAREN expressions R_PAREN" << endl; }
     ;
 
@@ -270,9 +270,9 @@ vars
     ;
 
 var
-    : identifiers
+    : identifier
         { cout << "var -> ident" << endl; }
-    | identifiers L_SQUARE_BRACKET expression R_SQUARE_BRACKET
+    | identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET
         { cout << "var -> ident L_SQUARE_BRACKET expression R_SQUARE_BRACKET" << endl; }
     ;
 

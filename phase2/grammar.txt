@@ -23,8 +23,8 @@ declaration
     ;
 
 identifiers
-    : IDENT
-    | IDENT COMMA identifiers
+    : identifier
+    | identifier COMMA identifiers
     ;
 
 identifier
@@ -101,11 +101,11 @@ term
     : var
     | NUMBER
     | L_PAREN expression R_PAREN
-    | identifiers L_PAREN expressions R_PAREN
+    | identifier L_PAREN expressions R_PAREN
     | SUB var
     | SUB NUMBER
     | SUB L_PAREN expression R_PAREN
-    | SUB identifiers L_PAREN expressions R_PAREN
+    | SUB identifier L_PAREN expressions R_PAREN
     ;
 
 vars
@@ -114,8 +114,8 @@ vars
     ;
 
 var
-    : identifiers
-    | identifiers L_SQUARE_BRACKET expression R_SQUARE_BRACKET
+    : identifier
+    | identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET
     ;
 
 
