@@ -40,7 +40,7 @@ function cc_files()
     for i in $(ls $FILES | grep \.min)
     do
         echo $i".txt"
-        $COMP $FILES/$i > $i."txt"
+        $COMP $FILES/$i > $i".txt"
     done
 }
 #----------------------------------------

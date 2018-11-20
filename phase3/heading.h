@@ -8,7 +8,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <stack>
+#include <vector>
 #include <map>
 
 /* C++ namespace */
