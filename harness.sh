@@ -1,35 +1,56 @@
 #!/bin/bash
 
-# USAGE: ./harness.sh name
-# phase1 == lexer
-# phase2 == parser
+# USAGE: ./harness.sh
 # phase3 == compiler
 
-if   [ $1 == "lexer" ] ; then
-    cd phase1
-elif [ $1 == "parser" ] ; then
-    cd phase2
-elif [ $1 == "compiler" ] ; then
-    cd phase3
-else
-    echo "Error: project name to test"
-    exit 1
-fi
+echo
+echo "Making compiler:"
+echo
 
-# rebuild
-make clean
+cd phase3
 make
+cd ..
 
-FILES="../tests"
+#----------------------------------------
 
-echo "Testing files:"
+echo
+echo "Output files:"
+echo
 
-# run tests
+FILES="tests"
+COMP="phase3/compiler"
 for i in $(ls $FILES | grep \.min)
 do
-    echo $i
-    ./$1 $FILES/$i > $i."txt"
+    echo $i".txt"
+    $COMP $FILES/$i > $i."txt"
 done
 
+#----------------------------------------
+
+echo
+echo "Test files:"
+echo
+
+MILR="tests/mil_run"
+for i in $(ls | grep \.min.txt)
+do
+    echo $i
+    $MILR $i <<< 10 # heredoc should work
+    echo
+done
+
+#----------------------------------------
+
+echo "Cleanup:"
+echo
+
+mv fibonacci.min.txt tmpfile # save output
+
+rm *.min.txt
+
+cd phase3
+make clean
 cd ..
-exit 0
+
+echo
+
