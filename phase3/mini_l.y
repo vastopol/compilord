@@ -29,11 +29,8 @@ extern int yylex(); // ‘yylex’ was not declared in this scope
 void yyerror(string);
 void yyerror(const char *msg);
 
-// print macros
-#define out(x) cout << (x);
-#define output(x) cout << (x) << endl;
-
 // symbol table && stack
+string buf;
 stringstream ss;
 map<string,string> symtab;
 stack< map<string,string> > symstk;
@@ -123,13 +120,22 @@ function
         {
             //cout << "function -> FUNCTION IDENT SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY" << endl;
 
-            //output("endfunc\n");
-            /* goal to output "func" then ss.str() then "endfunc" , each rule should write to the string stream, after output, reset ss.str() to "" */
+            /*  goal to output "func", ss.str(), and "endfunc"
+                each rule should write to the string stream,
+                after output reset ss.str() to ""
+            */
 
-            cout << "func ";
-            cout << ss.str();
-            cout << "\n" << "endfunc" << "\n" << endl;
+            cout << "func" << " ";
+
+            //cout << ss.str() << "\n";
+
+            while(ss >> buf){ output(buf); }
+
+            cout << "endfunc" << "\n\n";
+
+            buf = "";
             ss.str("");
+            ss.clear();
         }
     ;
 
@@ -149,15 +155,13 @@ declaration
         {
             //cout << "declaration -> identifiers COLON INTEGER" << endl;
 
-            //output(". ")
-            ss << ". ";
+            ss << "." << " ";
         }
     | identifiers COLON ARRAY L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER
         {
             //cout << "declaration -> identifiers COLON ARRAY L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER" << endl;
 
-            //output(".[] ")
-            ss << ".[] ";
+            ss << ".[]" << " ";
         }
     ;
 
@@ -177,8 +181,7 @@ identifier
         {
             //cout << "ident -> IDENT " << *yylval.sval << endl;
 
-            //output(*yylval.sval);
-            ss << *yylval.sval;
+            ss << *yylval.sval << " ";
         }
     ;
 
@@ -197,14 +200,20 @@ statement
     : var ASSIGN expression
         {
             //cout << "statement -> var ASSIGN expression" << endl;
+
+            ss << "=" << " ";
         }
     | IF bool-expr THEN statements ENDIF
         {
             //cout << "statement -> IF bool_exp THEN statements ENDIF" << endl;
+
+            ss << "?:=" << " ";
         }
     | IF bool-expr THEN statements ELSE statements ENDIF
         {
             //cout << "statement -> IF bool_exp THEN statements ELSE statements ENDIF" << endl;
+
+            ss << "?:=" << " ";
         }
     | WHILE bool-expr BEGINLOOP statements ENDLOOP
         {
@@ -218,15 +227,13 @@ statement
         {
             //cout << "statement -> READ vars" << endl;
 
-            //output(".< ")
-            ss << ".< ";
+            ss << ".<" << " ";
         }
     | WRITE vars
         {
             //cout << "statement -> WRITE vars" << endl;
 
-            //output(".> ")
-            ss << ".> ";
+            ss << ".>" << " ";
         }
     | CONTINUE
         {
@@ -235,6 +242,8 @@ statement
     | RETURN expression
         {
             //cout << "statement -> RETURN expression" << endl;
+
+            ss << "ret" << " ";
         }
     ;
 
@@ -246,6 +255,8 @@ bool-expr
     | relation-and-expr OR relation-and-expr
         {
             //cout << "bool_exp -> relation_and_exp OR relation_and_exp" << endl;
+
+            ss << "||" << " ";
         }
     ;
 
@@ -257,6 +268,8 @@ relation-and-expr
     | relation-expr AND relation-and-expr
         {
             //cout << "relation_and_exp -> relation_exp AND relation_exp" << endl;
+
+            ss << "&&" << " ";
         }
     ;
 
@@ -299,26 +312,38 @@ comp
     : EQ
         {
             //cout << "comp -> EQ" << endl;
+
+            ss << "==" << " ";
         }
     | NEQ
         {
             //cout << "comp -> NEQ" << endl;
+
+            ss << "!=" << " ";
         }
     | GT
         {
             //cout << "comp -> GT" << endl;
+
+            ss << ">" << " ";
         }
     | LT
         {
             //cout << "comp -> LT" << endl;
+
+            ss << "<" << " ";
         }
     | GTE
         {
             //cout << "comp -> GTE" << endl;
+
+            ss << ">=" << " ";
         }
     | LTE
         {
             //cout << "comp -> LTE" << endl;
+
+            ss << "<=" << " ";
         }
     ;
 
@@ -345,10 +370,14 @@ expression
     | mult-expr ADD expression
         {
             //cout << "expression -> multiplicative_expression ADD multiplicative_expression" << endl;
+
+            ss << "+" << " ";
         }
     | mult-expr SUB expression
         {
             //cout << "expression -> multiplicative_expression SUB multiplicative_expression" << endl;
+
+            ss << "-" << " ";
         }
     ;
 
@@ -360,14 +389,20 @@ mult-expr
     | term MULT term
         {
             //cout << "multiplicative_expression -> term MULT term" << endl;
+
+            ss << "*" << " ";
         }
     | term DIV term
         {
             //cout << "multiplicative_expression -> term DIV term" << endl;
+
+            ss << "/" << " ";
         }
     | term MOD term
         {
             //cout << "multiplicative_expression -> term MOD term" << endl;
+
+            ss << "%" << " ";
         }
     ;
 
@@ -380,8 +415,7 @@ term
         {
             //cout << "term -> NUMBER" << " " << yylval.ival << endl;
 
-            //output("number")
-            ss << yylval.ival;
+            ss << yylval.ival << " ";
         }
     | L_PAREN expression R_PAREN
         {
@@ -391,8 +425,10 @@ term
         {
             //cout << "term -> identifiers L_PAREN expressions R_PAREN" << endl;
 
-            //output("call");
-            ss << "call ";
+            ss << "param" << " ";
+            // expressions stored as params here
+            ss << "call" << " ";
+            // identifier, stored expressions from param
         }
     | SUB var
         {
@@ -401,6 +437,8 @@ term
     | SUB NUMBER
         {
             //cout << "term -> SUB NUMBER" << " " << yylval.ival << endl;
+
+            ss << (-1 * yylval.ival) << " ";
         }
     | SUB L_PAREN expression R_PAREN
         {

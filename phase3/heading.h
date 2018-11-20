@@ -14,3 +14,6 @@
 /* C++ namespace */
 using namespace std;
 
+// print function macros
+#define out(x) cout << (x);
+#define output(x) cout << (x) << endl;
