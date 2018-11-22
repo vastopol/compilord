@@ -26,14 +26,22 @@ extern FILE* yyin;  // multiple declarations of yyin
 extern int yylex(); // ‘yylex’ was not declared in this scope
 
 // user subroutines
+void print_debug();
 void yyerror(string);
 void yyerror(const char *msg);
 
-// symbol table && stack
+// symbol table. str stream, etc...
 string buf;
 stringstream ss;
+
+string funs;
+vector<string> funslst;
+
+string ids;
+vector<string> idslst;
+
 map<string,string> symtab;
-vector< map<string,string> > symstk;
+vector< map<string,string> > symtablst;
 
 %}
 
@@ -116,7 +124,7 @@ functions
     ;
 
 function
-    : FUNCTION identifier SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY
+    : FUNCTION identifierF SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY
         {
             //cout << "function -> FUNCTION IDENT SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY" << endl;
 
@@ -125,17 +133,28 @@ function
                 after output reset ss.str() to ""
             */
 
-            cout << "func" << " ";
+            // write mil code
+            funs += "func ";
+            while(getline(ss,buf))
+            {
+                funs += buf;
+                funs += "\n";
+            }
+            funs += "endfunc\n";
 
-            //cout << ss.str() << "\n";
+            // save func str
+            funslst.push_back(funs);
 
-            while(getline(ss,buf)){ output(buf); }
+            // save sym tab - see declaration && identifier
+            symtablst.push_back(symtab);
 
-            cout << "endfunc" << "\n\n";
-
+            // clear
+            funs = "";
             buf = "";
             ss.str("");
             ss.clear();
+            idslst.clear();
+            symtab.clear();
         }
     ;
 
@@ -150,18 +169,28 @@ declarations
         }
     ;
 
-declaration
+declaration                          // add to symbol table map here
     : identifiers COLON INTEGER
         {
             //cout << "declaration -> identifiers COLON INTEGER" << endl;
 
-            ss << "." << "\n";
+            for (auto id : idslst)
+            {
+                symtab[id] = "0";
+                ss << ". " << id << "\n";
+            }
+            idslst.clear();
         }
     | identifiers COLON ARRAY L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER
         {
             //cout << "declaration -> identifiers COLON ARRAY L_SQUARE_BRACKET NUMBER R_SQUARE_BRACKET OF INTEGER" << endl;
 
-            ss << ".[]" << "\n";
+            for (auto id : idslst)
+            {
+                symtab[id] = to_string(yylval.ival);
+                ss << ".[] " << id << ", " << yylval.ival << "\n";
+            }
+            idslst.clear();
         }
     ;
 
@@ -170,13 +199,13 @@ identifiers
         {
             //cout << "ident -> IDENT " << *yylval.sval << endl;
 
-            //output("_"+*yylval.sval)
+            //output("_1_"+*yylval.sval)
         }
     | identifier COMMA identifiers
         {
             //cout << "identifiers -> ident COMMA identifiers" << endl;
 
-            //output("_"+*yylval.sval)
+            //output("_2_"+*yylval.sval)
         }
     ;
 
@@ -185,7 +214,30 @@ identifier
         {
             //cout << "ident -> IDENT " << *yylval.sval << endl;
 
+            //output("_~_"+*yylval.sval);
+
             ss << *yylval.sval << "\n";
+
+            // capture name to store in symtab map
+            ids = *yylval.sval;
+            idslst.push_back(ids);
+        }
+    ;
+
+identifierF
+    : IDENT
+        {
+            //cout << "ident -> IDENT " << *yylval.sval << endl;
+
+            //output("_F_"+*yylval.sval);
+
+            ss << *yylval.sval << "\n";
+
+            /*
+            // capture name to store in symtab map
+            ids = *yylval.sval;
+            idslst.push_back(ids);
+            */
         }
     ;
 
@@ -231,13 +283,33 @@ statement
         {
             //cout << "statement -> READ vars" << endl;
 
-            ss << ".<" << "\n";
+            map<string,string>::iterator it = symtab.find(*yylval.sval);
+            if(it == symtab.end()){yyerror("read error with id");}
+
+            if( it->second == "0")
+            {
+                ss << ".< " << *yylval.sval << "\n";
+            }
+            else
+            {
+                ss << ".[]< " << *yylval.sval << ", " << "number_fixme" << "\n";
+            }
         }
     | WRITE vars
         {
             //cout << "statement -> WRITE vars" << endl;
 
-            ss << ".>" << "\n";
+            map<string,string>::iterator it = symtab.find(*yylval.sval);
+            if(it == symtab.end()){yyerror("write error with id");}
+
+            if( it->second == "0")
+            {
+                ss << ".> " << *yylval.sval << "\n";
+            }
+            else
+            {
+                ss << ".[]> " << *yylval.sval << ", " << "number_fixme" << "\n";
+            }
         }
     | CONTINUE
         {
@@ -246,6 +318,8 @@ statement
     | RETURN expression
         {
             //cout << "statement -> RETURN expression" << endl;
+
+            //output(yylval.ival); // might be return value?
 
             ss << "ret" << "\n";
         }
@@ -425,7 +499,7 @@ term
         {
             //cout << "term -> L_PAREN expression R_PAREN" << endl;
         }
-    | identifier L_PAREN expressions R_PAREN
+    | identifierF L_PAREN expressions R_PAREN
         {
             //cout << "term -> identifiers L_PAREN expressions R_PAREN" << endl;
 
@@ -448,7 +522,7 @@ term
         {
             //cout << "term -> SUB L_PAREN expression R_PAREN" << endl;
         }
-    | SUB identifier L_PAREN expressions R_PAREN
+    | SUB identifierF L_PAREN expressions R_PAREN
         {
             //cout << "term -> SUB identifiers L_PAREN expressions R_PAREN" << endl;
         }
@@ -489,7 +563,7 @@ var
 
 int main(int argc, char** argv)
 {
-    /* try to read from a input file */
+    // try to read from a input file
     if(argc >= 2)
     {
         yyin = fopen(argv[1], "r");
@@ -503,7 +577,32 @@ int main(int argc, char** argv)
         yyin = stdin;
     }
 
-    yyparse(); /* calls yylex() */
+    yyparse(); // calls yylex()
+
+    print_debug(); // show funcs && symtabs
+}
+
+void print_debug()
+{
+    // print out mil code for functions
+    for(auto i : funslst)
+    {
+        output(i);
+    }
+
+    // print out symbol tables
+    for(auto i : symtablst)
+    {
+        for( auto j : i )
+        {
+            string t = j.first;
+            t+=" ";
+            t+=j.second;
+            t+=" ";
+            output(t);
+        }
+        output("");
+    }
 }
 
 void yyerror(const char *msg)

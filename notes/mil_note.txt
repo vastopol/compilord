@@ -20,12 +20,26 @@ The main function must not return any value.
 
 the "=" is used in statement for ASSIGN, and maybe var
 
-not sure how to tell when read/write to scalar/array
+so far most of the hard work is in the rules "function" and "declaration" and "identifer/identifierF"
 
-probably add to symbol table in identifiers
+    when multiple identifiers declared on one line then multiple "." is generated
+        i, j : integer;
 
-also looks like might be errors with how ids are identified
-tried using output() but couldnt see some of the things
-it looks like when multiple id declred on one line then only one "." is generated
-    i, j : integer;
+    names are collected in identifier and when that returns to declaration they are added to symtab if not yet in.
+    adding to symbol table in the declaration part something like
+        symtab[*yylval.sval] = "0";
+        symtab[*yylval.sval] = "n"; where n is # of elements
+
+    add an identifierF for functions so they dont get names added to symbol table
+    this is used where an identifer name is for a function
+        in the function rule
+        in term rule for function calls
+
+some of the rules are printing out weird/backwards/postfix because of the precedence
+
+havent figured out to do labels
+
+not sure how to tell when read/write to scalar/array has to check type and decide
+it should work but it looks like its actually broken
+writes/reads with arrays cause segfaults
 
