@@ -26,7 +26,8 @@ extern FILE* yyin;  // multiple declarations of yyin
 extern int yylex(); // ‘yylex’ was not declared in this scope
 
 // user subroutines
-void print_debug();
+void print_funs();
+void print_symtabs();
 void yyerror(string);
 void yyerror(const char *msg);
 
@@ -37,7 +38,8 @@ stringstream ss;
 string funs;
 vector<string> funslst;
 
-string ids;
+vector<string> rwvarslst; // clear() in statement ASSIGN
+
 vector<string> idslst;
 
 map<string,string> symtab;
@@ -154,6 +156,7 @@ function
             ss.str("");
             ss.clear();
             idslst.clear();
+            rwvarslst.clear();
             symtab.clear();
         }
     ;
@@ -216,11 +219,10 @@ identifier
 
             //output("_~_"+*yylval.sval);
 
-            ss << *yylval.sval << "\n";
+            //ss << *yylval.sval << "\n";   // Might comment out because double print of ids for some rules
 
             // capture name to store in symtab map
-            ids = *yylval.sval;
-            idslst.push_back(ids);
+            idslst.push_back(*yylval.sval);
         }
     ;
 
@@ -231,12 +233,11 @@ identifierF
 
             //output("_F_"+*yylval.sval);
 
-            ss << *yylval.sval << "\n";
+            ss << *yylval.sval << "\n";  // need function name for the call instruction
 
             /*
             // capture name to store in symtab map
-            ids = *yylval.sval;
-            idslst.push_back(ids);
+            idslst.push_back(*yylval.sval);
             */
         }
     ;
@@ -257,19 +258,21 @@ statement
         {
             //cout << "statement -> var ASSIGN expression" << endl;
 
-            ss << "=" << "\n";
+            ss << "= " << rwvarslst.at(0) << ", " << yylval.ival << "\n";
+
+            rwvarslst.clear(); // remove var from list since
         }
     | IF bool-expr THEN statements ENDIF
         {
             //cout << "statement -> IF bool_exp THEN statements ENDIF" << endl;
 
-            ss << "?:=" << "\n";
+            ss << "?:= " << "\n";
         }
     | IF bool-expr THEN statements ELSE statements ENDIF
         {
             //cout << "statement -> IF bool_exp THEN statements ELSE statements ENDIF" << endl;
 
-            ss << "?:=" << "\n";
+            ss << "?:= " << "\n";
         }
     | WHILE bool-expr BEGINLOOP statements ENDLOOP
         {
@@ -288,7 +291,11 @@ statement
 
             if( it->second == "0")
             {
-                ss << ".< " << *yylval.sval << "\n";
+                for (auto var : rwvarslst)
+                {
+                    ss << ".< " << var << "\n";
+                }
+                rwvarslst.clear();
             }
             else
             {
@@ -304,7 +311,11 @@ statement
 
             if( it->second == "0")
             {
-                ss << ".> " << *yylval.sval << "\n";
+                for (auto var : rwvarslst)
+                {
+                    ss << ".> " << var << "\n";
+                }
+                rwvarslst.clear();
             }
             else
             {
@@ -488,12 +499,14 @@ term
     : var
         {
             //cout << "term -> var" << endl;
+
+            rwvarslst.clear();
         }
     | NUMBER
         {
             //cout << "term -> NUMBER" << " " << yylval.ival << endl;
 
-            ss << yylval.ival << "\n";
+            //ss << yylval.ival << "\n";
         }
     | L_PAREN expression R_PAREN
         {
@@ -532,10 +545,14 @@ vars
     : var
         {
             //cout << "vars -> var" << endl;
+
+            //output(*yylval.sval);
         }
     | var COMMA vars
         {
             //cout << "vars -> var COMMA vars" << endl;
+
+            //output(*yylval.sval);
         }
     ;
 
@@ -543,6 +560,10 @@ var
     : identifier
         {
             //cout << "var -> ident" << endl;
+
+            //output(*yylval.sval);
+
+            rwvarslst.push_back(*yylval.sval);
         }
     | identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET
         {
@@ -579,17 +600,21 @@ int main(int argc, char** argv)
 
     yyparse(); // calls yylex()
 
-    print_debug(); // show funcs && symtabs
+    print_funs();
+    //print_symtabs();
 }
 
-void print_debug()
+void print_funs()
 {
     // print out mil code for functions
     for(auto i : funslst)
     {
         output(i);
     }
+}
 
+void print_symtabs()
+{
     // print out symbol tables
     for(auto i : symtablst)
     {

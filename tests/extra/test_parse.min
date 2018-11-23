@@ -1,5 +1,6 @@
-## test harness
+## test harness for the PHASE2 PARSER
 ## these functions have passed the test
+## this code isn't necessarily correct mini-l that would run
 
 ## only body
 function f0;

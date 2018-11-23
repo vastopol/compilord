@@ -10,7 +10,8 @@
 function main()
 {
     build_cc
-    cc_files
+    test_cc
+    # cc_files
     # test_files
     # clean_up
 }
@@ -29,31 +30,52 @@ function build_cc()
 }
 #----------------------------------------
 
+function test_cc()
+{
+    echo
+    echo "Testing compiler:"
+    echo
+
+    FILES="tests"
+    TESTS="tests/extra"
+    COMP="phase3/compiler"
+    MILR="tests/mil_run"
+
+    $COMP $TESTS/test_comp.min > test_comp.min.txt
+
+    cat test_comp.min.txt
+    echo
+
+    $MILR test_comp.min.txt
+}
+#----------------------------------------
+
+# compile the 3 test files fibonacci, mytest, and primes
 function cc_files()
 {
     echo
-    echo "Output files:"
+    echo "Compiling files:"
     echo
 
     FILES="tests"
     COMP="phase3/compiler"
     for i in $(ls $FILES | grep \.min)
     do
-        echo $i".txt"
-        $COMP $FILES/$i > $i".txt"
+        echo $i".mil"
+        $COMP $FILES/$i > $i".mil"
     done
 }
 #----------------------------------------
 
-# run generated code against mil interpreter
+# run generated code from 3 test files against mil interpreter
 function test_files()
 {
     echo
-    echo "Test files:"
+    echo "Testing files:"
     echo
 
     MILR="tests/mil_run"
-    for i in $(ls | grep \.min.txt)
+    for i in $(ls | grep \.min.mil)
     do
         echo $i
         $MILR $i <<< 10 # heredoc should work
@@ -67,7 +89,8 @@ function clean_up()
     echo "Clean up:"
     echo
 
-    rm *.min.txt
+    # test_cc -> .min.txt && cc_files -> .min.mil
+    rm *.min.txt *.min.mil
 
     cd phase3
     make clean

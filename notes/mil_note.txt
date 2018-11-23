@@ -18,11 +18,45 @@ The main function must not return any value.
 
 #----------------------------------------
 
-the "=" is used in statement for ASSIGN, and maybe var
+COMPLETED TASKS
+
+integer ( negative/zero/positive )
+arrays  ( size >= 1 ... not sure how would handle empty ? )
+
+DECLARE
+    declare integer
+    declare integers in a list
+    declare array of integer
+READ
+    read integer
+    read integers in a list
+    // read array
+WRITE
+    write integer
+    write integers in a list
+    // write array
+ASSIGN
+    assign number to integer
+
+#----------------------------------------
+
+some of the rules are printing out weird/backwards/postfix because of the precedence
+
+eventually probably will comment out the part to print names of ids in identifier rule since should have that fixed for each rule.
+eventually probably will comment out the part to print numbers in term rule since should have that fixed for each rule.
+
+have not figured out to do labels or jumping with branches and loops
+
+reads/writes with integers work
+not sure how to tell if working when read/write to array has to check type and decide
+it should work but it looks like its actually broken because writes/reads with arrays cause segfaults
+
+the "=" is used in statement for ASSIGN, and maybe var or elsewhere because of the temporary variables created.
+if assign is "id := expr" then expression can be complex but returns an int
 
 so far most of the hard work is in the rules "function" and "declaration" and "identifer/identifierF"
 
-    when multiple identifiers declared on one line then multiple "." is generated
+    when multiple identifiers declared on one line then multiple "." is generated later in a loop after names are collected.
         i, j : integer;
 
     names are collected in identifier and when that returns to declaration they are added to symtab if not yet in.
@@ -35,11 +69,25 @@ so far most of the hard work is in the rules "function" and "declaration" and "i
         in the function rule
         in term rule for function calls
 
-some of the rules are printing out weird/backwards/postfix because of the precedence
+#----------------------------------------
 
-havent figured out to do labels
+DATAS:
 
-not sure how to tell when read/write to scalar/array has to check type and decide
-it should work but it looks like its actually broken
-writes/reads with arrays cause segfaults
+vector<string> rwvarslst;
+    read/write list
+    strings get appended in var rule. appends for READ, WRITE, and also ASSIGN
+    clear in statement -> ASSIGN to get rid of accidental var appends ?
+    clear in term -> var to get rid of accidental var appends ?
+    clear in read/write after loop
+    clear in function after scope
 
+vector<string> idslst;
+    id declare list
+    strings get appended in identifier rule
+    clear in declaration after loop
+    clear in function after scope
+
+map<string,string> symtab;
+    function symbol table
+    clear in declaration after loop
+    clear in function after scope

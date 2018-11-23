@@ -1,0 +1,47 @@
+## test harness for phase3
+## should generate mil code that works
+## comment in/out chunks to test different parts
+## all should be valid working mini-l
+
+## main does not have a return
+## all other functions return scalar
+
+function main;
+
+beginparams
+    ## none
+endparams
+
+beginlocals
+    ## TEST: declare integer
+    ## PASS: can declare local integers single/list way
+        i : integer;      ## single int
+        j,k : integer;    ## multiple ints
+    ## TEST: declare array
+    ## PASS: can declare local array of integers
+        ## a : array [5]  of integer;
+        ## b : array [10] of integer;
+endlocals
+
+beginbody
+    ## TEST: read write integer
+    ## PASS: can read and write integers single/list way
+        ## read  i;
+        ## write i;
+        ## read  j,k;
+        ## write j,k;
+    ## TEST: read write array
+    ## FAIL: both cause segfault
+        ## read  a[0];
+        ## write a[0];
+    ## TEST: assign integer/array
+    ## PASS: int = num
+    ## FAIL: everything else
+        j := 0;       write j;      ## int = num --> PASS
+        ## k := j;       write k;      ## int = int
+        ## a[0] := 1;    write a[0];   ## arr = num
+        ## b[0] := 2;    write b[0];   ## arr = num
+        ## a[0] := j;    write a[0];   ## arr = int
+        ## a[0] := b[0]; write a[0];   ## arr = arr
+        ## k := a[0];    write k;      ## int = arr
+endbody
