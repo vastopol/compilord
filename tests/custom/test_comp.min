@@ -1,10 +1,10 @@
-## test harness for phase3
-## mini-l statements must be syntactically && semantically correct
-## compiler should generate valid executable mil code
-## comment in/out chunks to test different parts
+## Compiler Test Harness 1
 
-## main does not have a return
-## all other functions return a scalar
+## testing the basic operations
+## core functionality: declare, read, write, assign, math, etc...
+## tests should cover most of the simple use cases
+## main does not have a return, no other functions
+
 ##----------------------------------------
 
 function main;
@@ -39,24 +39,32 @@ beginbody
         ## write j,k;
 
     ## TEST: read write array (a,b)
-    ## PASS: can read and write arrays
+    ## PASS: can read and write arrays number index
+    ## FAIL: array subscript that isn't a number
         ## read  a[0];
         ## write a[0];
         ## read  b[1];
         ## write b[1];
+        ## i := 0;
+        ## read  a[i]; ## --> FAIL (variable subscript)
+        ## write a[i]; ## --> FAIL (variable subscript)
 
-    ## TEST: assign integer/array (j,k,a,b)
-    ## PASS: int = num
-    ## FAIL: everything else
-        j := 0;        write j;     ## int = num --> PASS
-        k := j;        write k;     ## int = int --> crash out of bounds error
-        ## a[0] := 1;     write a[0];  ## arr = num
+    ## TEST: assign integer/array (i,j,k,a,b)
+    ## PASS: int = num, int = int, arr = num, arr = int
+    ## FAIL: arr = arr, int = arr, array subscript that isn't number
+        ## i := -1;       write i;     ## int = num --> FAIL (negative number)
+        ## i := 0;        write i;     ## int = num
+        ## j := 1;        write j;     ## int = num
+        ## k := j;        write k;     ## int = int
+        ## a[1] := 0;     write a[1];  ## arr = num
         ## b[0] := 2;     write b[0];  ## arr = num
         ## a[0] := j;     write a[0];  ## arr = int
-        ## a[0] := b[0];  write a[0];  ## arr = arr
-        ## k := a[0];     write k;     ## int = arr
+        ## a[0] := b[0];  write a[0];  ## arr = arr --> FAIL (not done yet)
+        ## k := a[0];     write k;     ## int = arr --> FAIL (not done yet)
+        ## a[k] := 0;     write a[k];  ## arr = int --> FAIL (variable subscript)
+        ## j := a[k];     write j;     ## int = arr --> FAIL (not done yet)&&(variable subscript)
 
-    ## TEST: arithmetic (i,j,k)
+    ## TEST: arithmetic expressions (i,j,k)
     ## PASS: none
     ## FAIL: all
         ## num op num

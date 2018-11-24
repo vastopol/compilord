@@ -30,22 +30,51 @@ DECLARE
 READ
     read integer
     read integers in a list
-    read array
+    read array index*
 WRITE
     write integer
     write integers in a list
-    write array
+    write array index*
 ASSIGN
     assign number to integer
+    assign integer to integer
+    assign number to array index*
+    assign integer to array index*
     // ...
 ARITHMETIC
     // ...
 
+note:
+* technically array subscripting only works with numbers for now
+
 #----------------------------------------
 
-* misc
-    some of the rules are printing out weird/backwards/postfix because of the precedence
+most of this is really badly put together. surprised it works so far.
+probably either need to fix or redesign later because a lot of shared data structures,
+and other bs to make it work which is probably bad.
 
+* broken stuff...
+    --> negative numbers
+        looks like mil can't do negatives, outputs error "Resolution of argument -1 failed."
+        this is not a compile error but a runtime error with mil_run interpreter
+        i := -1;
+
+    --> array subscripting
+        the index has to be a number not variable or expression
+        either parses wrong or crashes
+        read a[i-1];
+        a[j+1]; := i;
+
+    --> read/write
+        if use an array with non number index then makes incorrect code
+        read a[i]; becomes .[]< a, i
+        but actually this produces 2 scalar reads of the index variable
+        .< i
+        .< i
+
+* misc...
+    it looks like arrays elements default value is set to 0 automatically
+    some of the rules are printing out weird/backwards/postfix because of the precedence
     eventually probably will comment out the part to print names of ids in identifier rule since should have that fixed for each rule.
     eventually probably will comment out the part to print numbers in term rule since should have that fixed for each rule.
 
@@ -59,11 +88,24 @@ ARITHMETIC
 * arithmetic
     need to have assignment working first before can do math
 
+
 * assignment
     the "=" is used in statement for ASSIGN, and maybe var or elsewhere because of the temporary variables created.
-    have to figure out when = vs []= or =[], have to check the type before
     if assign is "id := expr" then any expression can be complex but eventually returns an int
-    
+    have to figure out when = vs []= or =[], have to check the type before
+
+    scalars are more straight forward, the yylval.ival or yylval.sval is the source value, no indexing.
+    with arrays the yylval.ival or yylval.sval is the source value to assign to destination
+    dst[idx] = src; --> []= dst, idx, src
+    the index is saved to a vector in the var rule.
+    have a variable check flag called vtag used in assignment.
+    it gets set in the term rule, numbers get 0, ids get 1.
+    this is so can tell apart index type
+    ---> this is why used the vtag:
+    cant use yylval.sval to branch because if a[0] := 2 then yylval.sval is 0x2 and then not == NULL
+    so can't say if(yylval.sval){...} because it isnt == NULL == 0
+    basicly only works if src is not 0
+
 
 * read/write
     form of "read/write vars" for the pattern
@@ -72,7 +114,8 @@ ARITHMETIC
     then in loop the mil is output (similar to the declaration rule)
     this works for integers, in var rule the id name is in yylval.sval is appended to rwvarslst,
     it work for arrays but for arrays it is more complicated because of syntax, have to get the last id in the idslst and append to rwvarslst
-    with arrays the yylval.ival is the index to read/write
+    with arrays the yylval.ival/yylval.sval is the index to read/write
+    cant get it to work with variable index
 
 * declarations/identifiers
     so far the code is in and "declaration" and "identifer/identifierF"
@@ -107,13 +150,23 @@ ARITHMETIC
 
 DATAS:
 
+int vtag
+    used for helping differentiate the assign statements
+    0 = num, set in term NUMBER
+    1 = str, set in term var
+
 vector<string> rwvarslst;
-    read/write list
+    read/write,assign list
     strings get appended in var rule. appends for READ, WRITE, and also ASSIGN
-    clear in statement -> ASSIGN to get rid of accidental var appends ?
-    clear in term -> var to get rid of accidental var appends ?
     clear in read/write after loop
     clear in function after scope
+    // maybe ? clear in statement -> ASSIGN to get rid of accidental var appends
+    // maybe ? clear in term -> var to get rid of accidental var appends
+
+vector<string> varidxlst;
+    assign array index list
+    strings get appended in var rule if is array
+    will append either to_string(yylval.ival) or *yylval.sval
 
 vector<string> idslst;
     id declare list
@@ -125,4 +178,15 @@ map<string,string> symtab;
     function symbol table
     clear in declaration after loop
     clear in function after scope
+
+#----------------------------------------
+
+test harness code:
+
+comment in/out chunks to test different parts
+all mini-l statements must be syntactically && semantically correct
+compiler should generate valid executable mil code
+
+harness 1 - basic
+harness 2 - complex
 

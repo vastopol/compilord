@@ -38,9 +38,11 @@ stringstream ss;
 string funs;
 vector<string> funslst;
 
-vector<string> rwvarslst; // clear() in statement ASSIGN
+int vtag; // for assign choosing: 0 =  num, 1 = str
+vector<string> rwvarslst; // var names in read,write,assign
+vector<string> varidxlst; // array index
 
-vector<string> idslst;
+vector<string> idslst; // idents for symbol table
 
 map<string,string> symtab;
 vector< map<string,string> > symtablst;
@@ -253,8 +255,53 @@ statement
         {
             //cout << "statement -> var ASSIGN expression" << endl;
 
-            ss << "= " << rwvarslst.at(0) << ", " << yylval.ival << "\n";  // only for int = num
+            /*output("id");
+            outarr(idslst);
+            output("");
+            output("var");
+            outarr(rwvarslst);
+            output("");
+            output("index");
+            outarr(varidxlst);
+            output("");*/
 
+            map<string,string>::iterator it = symtab.find(rwvarslst.at(0));
+            if(it == symtab.end()){ yyerror("error: in assign null var encountered"); }
+
+            if(it->second == "0") // scalar
+            {
+                ss << "= " << rwvarslst.at(0) << ", ";
+
+                if(vtag == 0) // was a number
+                {
+                    ss << yylval.ival << "\n";  // int = num
+                }
+                else // need to check yylval.sval is int or arr
+                {
+                    ss << *yylval.sval << "\n";  // int = int
+
+                    // int = arr
+                    // fixme
+                }
+            }
+            else // array
+            {
+                ss << "[]= " << rwvarslst.at(0) << ", " << varidxlst.at(0) << ", ";
+
+                if(vtag == 0) // was a number
+                {
+                    ss << yylval.ival << "\n";  // arr = num
+                }
+                else // need to check yylval.sval is int or arr
+                {
+                    ss << *yylval.sval << "\n";  // arr = int
+
+                    // arr = arr
+                    // fixme
+                }
+                varidxlst.erase(varidxlst.begin());
+            }
+            vtag = -1;         // reset var tag
             rwvarslst.clear(); // remove var from list
         }
     | IF bool-expr THEN statements ENDIF
@@ -282,17 +329,20 @@ statement
             //cout << "statement -> READ vars" << endl;
 
             map<string,string>::iterator it;
-            for( auto v : rwvarslst)
+            for(auto v : rwvarslst)
             {
                 it = symtab.find(v);
                 if(it == symtab.end()){ yyerror("read error with id"); }
-                if( it->second == "0")
+                if(it->second == "0")
                 {
                     ss << ".< " << v << "\n";
                 }
                 else
                 {
-                    ss << ".[]< " << v << ", " << yylval.ival << "\n";
+                    //ss << ".[]< " << v << ", " << yylval.ival << "\n";
+
+                    ss << ".[]< " << v << ", " << varidxlst.at(0) << "\n";
+                    varidxlst.erase(varidxlst.begin());
                 }
             }
             rwvarslst.clear();
@@ -302,17 +352,20 @@ statement
             //cout << "statement -> WRITE vars" << endl;
 
             map<string,string>::iterator it;
-            for( auto v : rwvarslst)
+            for(auto v : rwvarslst)
             {
                 it = symtab.find(v);
-                if(it == symtab.end()){ yyerror("read error with id"); }
-                if( it->second == "0")
+                if(it == symtab.end()){ yyerror("write error with id"); }
+                if(it->second == "0")
                 {
                     ss << ".> " << v << "\n";
                 }
                 else
                 {
-                    ss << ".[]> " << v << ", " << yylval.ival << "\n";
+                    //ss << ".[]> " << v << ", " << yylval.ival << "\n";
+
+                    ss << ".[]> " << v << ", " << varidxlst.at(0) << "\n";
+                    varidxlst.erase(varidxlst.begin());
                 }
             }
             rwvarslst.clear();
@@ -495,13 +548,17 @@ term
         {
             //cout << "term -> var" << endl;
 
-            rwvarslst.clear();
+            //rwvarslst.clear(); // comment out so assign works
+
+            vtag = 1; // for assign src is ident
         }
     | NUMBER
         {
             //cout << "term -> NUMBER" << " " << yylval.ival << endl;
 
             //ss << yylval.ival << "\n";  // probably comment out eventually
+
+            vtag = 0; // for the assign src is num
         }
     | L_PAREN expression R_PAREN
         {
@@ -524,7 +581,7 @@ term
         {
             //cout << "term -> SUB NUMBER" << " " << yylval.ival << endl;
 
-            ss << (-1 * yylval.ival) << "\n";
+            ss << (-1 * yylval.ival) << "\n";  // not sure...
         }
     | SUB L_PAREN expression R_PAREN
         {
@@ -564,10 +621,20 @@ var
         {
             //cout << "var -> ident L_SQUARE_BRACKET expression R_SQUARE_BRACKET" << endl;
 
-            //output(idslst.at(idslst.size()-1));
+            //output(idslst.at(idslst.size()-1)); // name
+            //if(yylval.sval){output(*yylval.sval);}else{output(yylval.ival);} // index
 
             string a_id = idslst.at(idslst.size()-1);
             rwvarslst.push_back(a_id);
+
+            if(vtag == 1) // id
+            {
+                varidxlst.push_back(*yylval.sval);
+            }
+            else // number
+            {
+                varidxlst.push_back(to_string(yylval.ival));
+            }
         }
     ;
 
