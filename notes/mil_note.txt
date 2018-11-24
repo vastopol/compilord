@@ -21,7 +21,7 @@ The main function must not return any value.
 COMPLETED TASKS
 
 integer ( negative/zero/positive )
-arrays  ( size >= 1 ... not sure how would handle empty ? )
+arrays  ( size >= 1 )
 
 DECLARE
     declare integer
@@ -30,44 +30,78 @@ DECLARE
 READ
     read integer
     read integers in a list
-    // read array
+    read array
 WRITE
     write integer
     write integers in a list
-    // write array
+    write array
 ASSIGN
     assign number to integer
+    // ...
+ARITHMETIC
+    // ...
 
 #----------------------------------------
 
-some of the rules are printing out weird/backwards/postfix because of the precedence
+* misc
+    some of the rules are printing out weird/backwards/postfix because of the precedence
 
-eventually probably will comment out the part to print names of ids in identifier rule since should have that fixed for each rule.
-eventually probably will comment out the part to print numbers in term rule since should have that fixed for each rule.
+    eventually probably will comment out the part to print names of ids in identifier rule since should have that fixed for each rule.
+    eventually probably will comment out the part to print numbers in term rule since should have that fixed for each rule.
 
-have not figured out to do labels or jumping with branches and loops
+* branch, loops, jump, label
+    have not figured out to do labels or jumping with branches and loops
+    also need the bool stuff to work first
 
-reads/writes with integers work
-not sure how to tell if working when read/write to array has to check type and decide
-it should work but it looks like its actually broken because writes/reads with arrays cause segfaults
+* booleans
+    not done at all yet
 
-the "=" is used in statement for ASSIGN, and maybe var or elsewhere because of the temporary variables created.
-if assign is "id := expr" then expression can be complex but returns an int
+* arithmetic
+    need to have assignment working first before can do math
 
-so far most of the hard work is in the rules "function" and "declaration" and "identifer/identifierF"
+* assignment
+    the "=" is used in statement for ASSIGN, and maybe var or elsewhere because of the temporary variables created.
+    have to figure out when = vs []= or =[], have to check the type before
+    if assign is "id := expr" then any expression can be complex but eventually returns an int
+    
 
-    when multiple identifiers declared on one line then multiple "." is generated later in a loop after names are collected.
+* read/write
+    form of "read/write vars" for the pattern
+    when it goes to var rule then ids are added to the rwvarslst vector.
+    when in read/write has to check type and decide int or array
+    then in loop the mil is output (similar to the declaration rule)
+    this works for integers, in var rule the id name is in yylval.sval is appended to rwvarslst,
+    it work for arrays but for arrays it is more complicated because of syntax, have to get the last id in the idslst and append to rwvarslst
+    with arrays the yylval.ival is the index to read/write
+
+* declarations/identifiers
+    so far the code is in and "declaration" and "identifer/identifierF"
+
+    when multiple identifiers declared on one line then multiple "." is generated for each id later in a loop after names are collected.
         i, j : integer;
 
-    names are collected in identifier and when that returns to declaration they are added to symtab if not yet in.
-    adding to symbol table in the declaration part something like
+    names are collected in identifier the strings are put into idslst vector
+    when that part returns to the declaration a loop will add ids to symtab if not yet in.
+    then the mil code is output in the same loop
+
+    adding to symbol table in the declaration part with a loop something like
         symtab[*yylval.sval] = "0";
-        symtab[*yylval.sval] = "n"; where n is # of elements
+        symtab[*yylval.sval] = to_string(yylval.ival); // yylval.ival is # of elements
+
+    note because of the way distinguish between scalar and array with scalar size == 0
+    there can be no empty arrays, ie. arrays must be size >= 1
 
     add an identifierF for functions so they dont get names added to symbol table
     this is used where an identifer name is for a function
         in the function rule
         in term rule for function calls
+
+* functions
+    each rule should write to the string stream then when done goes to function rule
+    in function rule output: "func", ss.str(), and "endfunc"
+    save output to vector of strings where each string is the mil code for a function
+    after output reset ss.str() to "" and clear the stringstream
+    also save symbol table to vector of maps
 
 #----------------------------------------
 
@@ -91,3 +125,4 @@ map<string,string> symtab;
     function symbol table
     clear in declaration after loop
     clear in function after scope
+

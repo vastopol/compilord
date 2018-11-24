@@ -6,7 +6,7 @@
 #----------------------------------------
 
 # this is the function called at bottom of script
-# comment out subfunctions in main to change script
+# comment out subfunctions in main to change script actions
 function main()
 {
     build_cc
@@ -18,6 +18,7 @@ function main()
 
 #----------------------------------------
 
+# make the phase3 compiler
 function build_cc()
 {
     echo
@@ -30,27 +31,27 @@ function build_cc()
 }
 #----------------------------------------
 
+# compile and run custom tests
 function test_cc()
 {
     echo
     echo "Testing compiler:"
     echo
 
-    FILES="tests"
-    TESTS="tests/extra"
+    TESTS="tests/custom"
     COMP="phase3/compiler"
     MILR="tests/mil_run"
 
-    $COMP $TESTS/test_comp.min > test_comp.min.txt
+    $COMP $TESTS/test_comp.min > test_comp.min.mil
 
-    cat test_comp.min.txt
+    cat test_comp.min.mil
     echo
 
-    $MILR test_comp.min.txt
+    $MILR test_comp.min.mil
 }
 #----------------------------------------
 
-# compile the 3 test files fibonacci, mytest, and primes
+# compile the standard test files: fibonacci, mytest, primes
 function cc_files()
 {
     echo
@@ -67,7 +68,7 @@ function cc_files()
 }
 #----------------------------------------
 
-# run generated code from 3 test files against mil interpreter
+# run generated code from the standard test files against mil interpreter
 function test_files()
 {
     echo
@@ -84,13 +85,13 @@ function test_files()
 }
 #----------------------------------------
 
+# remove generated files from build
 function clean_up()
 {
     echo "Clean up:"
     echo
 
-    # test_cc -> .min.txt && cc_files -> .min.mil
-    rm *.min.txt *.min.mil
+    rm *.min.mil
 
     cd phase3
     make clean

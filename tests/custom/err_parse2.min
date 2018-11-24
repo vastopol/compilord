@@ -1,3 +1,6 @@
+## this is probably an older version of mini-l
+## notice the "foreach" loop
+
 function fibonacci;
 beginparams
 	k : integer;

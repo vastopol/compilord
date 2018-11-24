@@ -130,11 +130,6 @@ function
         {
             //cout << "function -> FUNCTION IDENT SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY" << endl;
 
-            /*  goal to output "func", ss.str(), and "endfunc"
-                each rule should write to the string stream,
-                after output reset ss.str() to ""
-            */
-
             // write mil code
             funs += "func ";
             while(getline(ss,buf))
@@ -144,10 +139,10 @@ function
             }
             funs += "endfunc\n";
 
-            // save func str
+            // save mil code function str
             funslst.push_back(funs);
 
-            // save sym tab - see declaration && identifier
+            // save symbol table
             symtablst.push_back(symtab);
 
             // clear
@@ -172,7 +167,7 @@ declarations
         }
     ;
 
-declaration                          // add to symbol table map here
+declaration                          // add identifiers to symbol table here
     : identifiers COLON INTEGER
         {
             //cout << "declaration -> identifiers COLON INTEGER" << endl;
@@ -233,7 +228,7 @@ identifierF
 
             //output("_F_"+*yylval.sval);
 
-            ss << *yylval.sval << "\n";  // need function name for the call instruction
+            ss << *yylval.sval << "\n";  // need function name output for the call instruction
 
             /*
             // capture name to store in symtab map
@@ -258,9 +253,9 @@ statement
         {
             //cout << "statement -> var ASSIGN expression" << endl;
 
-            ss << "= " << rwvarslst.at(0) << ", " << yylval.ival << "\n";
+            ss << "= " << rwvarslst.at(0) << ", " << yylval.ival << "\n";  // only for int = num
 
-            rwvarslst.clear(); // remove var from list since
+            rwvarslst.clear(); // remove var from list
         }
     | IF bool-expr THEN statements ENDIF
         {
@@ -286,41 +281,41 @@ statement
         {
             //cout << "statement -> READ vars" << endl;
 
-            map<string,string>::iterator it = symtab.find(*yylval.sval);
-            if(it == symtab.end()){yyerror("read error with id");}
-
-            if( it->second == "0")
+            map<string,string>::iterator it;
+            for( auto v : rwvarslst)
             {
-                for (auto var : rwvarslst)
+                it = symtab.find(v);
+                if(it == symtab.end()){ yyerror("read error with id"); }
+                if( it->second == "0")
                 {
-                    ss << ".< " << var << "\n";
+                    ss << ".< " << v << "\n";
                 }
-                rwvarslst.clear();
+                else
+                {
+                    ss << ".[]< " << v << ", " << yylval.ival << "\n";
+                }
             }
-            else
-            {
-                ss << ".[]< " << *yylval.sval << ", " << "number_fixme" << "\n";
-            }
+            rwvarslst.clear();
         }
     | WRITE vars
         {
             //cout << "statement -> WRITE vars" << endl;
 
-            map<string,string>::iterator it = symtab.find(*yylval.sval);
-            if(it == symtab.end()){yyerror("write error with id");}
-
-            if( it->second == "0")
+            map<string,string>::iterator it;
+            for( auto v : rwvarslst)
             {
-                for (auto var : rwvarslst)
+                it = symtab.find(v);
+                if(it == symtab.end()){ yyerror("read error with id"); }
+                if( it->second == "0")
                 {
-                    ss << ".> " << var << "\n";
+                    ss << ".> " << v << "\n";
                 }
-                rwvarslst.clear();
+                else
+                {
+                    ss << ".[]> " << v << ", " << yylval.ival << "\n";
+                }
             }
-            else
-            {
-                ss << ".[]> " << *yylval.sval << ", " << "number_fixme" << "\n";
-            }
+            rwvarslst.clear();
         }
     | CONTINUE
         {
@@ -332,7 +327,7 @@ statement
 
             //output(yylval.ival); // might be return value?
 
-            ss << "ret" << "\n";
+            ss << "ret " << "\n";
         }
     ;
 
@@ -506,7 +501,7 @@ term
         {
             //cout << "term -> NUMBER" << " " << yylval.ival << endl;
 
-            //ss << yylval.ival << "\n";
+            //ss << yylval.ival << "\n";  // probably comment out eventually
         }
     | L_PAREN expression R_PAREN
         {
@@ -568,6 +563,11 @@ var
     | identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET
         {
             //cout << "var -> ident L_SQUARE_BRACKET expression R_SQUARE_BRACKET" << endl;
+
+            //output(idslst.at(idslst.size()-1));
+
+            string a_id = idslst.at(idslst.size()-1);
+            rwvarslst.push_back(a_id);
         }
     ;
 

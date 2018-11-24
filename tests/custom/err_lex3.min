@@ -1,8 +1,10 @@
+## lexer error identifier ending in underscore
+
 function test2;
 beginparams
 endparams
 beginlocals
     n_ : integer;
 endlocals
-beginprogram
-endprogram
+beginbody
+endbody

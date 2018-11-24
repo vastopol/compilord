@@ -1,0 +1,13 @@
+it appears as though the syntax of Mini-L has changed at some point (possibly multiple times).
+some of the examples of .min programs contain different keywords.
+
+new specification tokens:
+    FUNCTION, BEGIN_PARAMS, END_PARAMS, BEGIN_LOCALS, END_LOCALS, BEGIN_BODY, END_BODY
+
+older specification tokens: (no longer present)
+    PROGRAM, BEGIN_PROGRAM, END_PROGRAM, BREAK, EXIT, QUESTION
+
+another possible old token: (no longer present)
+    FOREACH
+
+    
