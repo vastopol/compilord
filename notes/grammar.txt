@@ -1,5 +1,12 @@
 MINI-L Grammar
 
+This grammar is the model used for the mini-l compiler.
+This is derived from the syntax diagrams for the language, but slightly changed.
+
+
+--------------------START--------------------
+
+
 program
     : functions
     ;
@@ -119,7 +126,5 @@ var
     ;
 
 
-/* ---------------------------------------- */
+--------------------END--------------------
 
-identifier is just for functions to make sure 1 name only
-expressions is just for terms having commas

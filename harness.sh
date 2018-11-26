@@ -13,7 +13,7 @@ function main()
     test_cc
     # cc_files
     # test_files
-    # clean_up
+    clean_up
 }
 
 #----------------------------------------

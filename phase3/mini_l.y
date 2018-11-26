@@ -31,18 +31,24 @@ void print_symtabs();
 void yyerror(string);
 void yyerror(const char *msg);
 
-// symbol table. str stream, etc...
-string buf;
-stringstream ss;
+// data structures grouped by use
 
-string funs;
-vector<string> funslst;
+stringstream ss;          // generate code to string stream as parses
+string buf;               // buffer to read from string stream
+string funs;              // write out function from string stream
+vector<string> funslst;   // all the compiled functions code
 
-int vtag; // for assign choosing: 0 =  num, 1 = str
+int vtag;                 // in assign flag for choosing: 0 =  num, 1 = str
 vector<string> rwvarslst; // var names in read,write,assign
 vector<string> varidxlst; // array index
 
-vector<string> idslst; // idents for symbol table
+int fcnt = 0;             // function counter for string stream
+string fid;               // function name for call
+
+int pcnt = 0;             // param counter for ss
+int pnum = 0;             // number of params
+
+vector<string> idslst;    // idents for symbol table
 
 map<string,string> symtab;
 vector< map<string,string> > symtablst;
@@ -128,7 +134,7 @@ functions
     ;
 
 function
-    : FUNCTION identifierF SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY
+    : FUNCTION identifierF SEMICOLON BEGIN_PARAMS declarationsP END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY
         {
             //cout << "function -> FUNCTION IDENT SEMICOLON BEGIN_PARAMS declarations END_PARAMS BEGIN_LOCALS declarations END_LOCALS BEGIN_BODY statements END_BODY" << endl;
 
@@ -148,6 +154,8 @@ function
             symtablst.push_back(symtab);
 
             // clear
+            vtag = -1;
+            fcnt = 0;
             funs = "";
             buf = "";
             ss.str("");
@@ -169,6 +177,20 @@ declarations
         }
     ;
 
+declarationsP
+    : /* epsilon */
+        {
+            //cout << "declarations -> epsilon" << endl;
+
+            pcnt = 0; // done in declarationsP
+            pnum = 0; // reset counter
+        }
+    | declaration SEMICOLON declarationsP
+        {
+            //cout << "declarations -> declaration SEMICOLON declarations" << endl;
+        }
+    ;
+
 declaration                          // add identifiers to symbol table here
     : identifiers COLON INTEGER
         {
@@ -178,6 +200,12 @@ declaration                          // add identifiers to symbol table here
             {
                 symtab[id] = "0";
                 ss << ". " << id << "\n";
+
+                if(pcnt == 1) // output the assignment of positional arguments to parameters
+                {
+                    ss << "= " << id << ", $" << pnum << "\n";
+                    pnum++;
+                }
             }
             idslst.clear();
         }
@@ -230,12 +258,15 @@ identifierF
 
             //output("_F_"+*yylval.sval);
 
-            ss << *yylval.sval << "\n";  // need function name output for the call instruction
+            fid = *yylval.sval; // save function name for the call instruction
 
-            /*
-            // capture name to store in symtab map
-            idslst.push_back(*yylval.sval);
-            */
+            if(fcnt == 0) // output for the first line of code func name
+            {
+                ss << *yylval.sval << "\n";
+                fcnt++;
+
+                pcnt = 1; // set for declarationsP
+            }
         }
     ;
 
@@ -255,6 +286,7 @@ statement
         {
             //cout << "statement -> var ASSIGN expression" << endl;
 
+            // useful later when fixing the =[] part
             /*output("id");
             outarr(idslst);
             output("");
@@ -339,8 +371,6 @@ statement
                 }
                 else
                 {
-                    //ss << ".[]< " << v << ", " << yylval.ival << "\n";
-
                     ss << ".[]< " << v << ", " << varidxlst.at(0) << "\n";
                     varidxlst.erase(varidxlst.begin());
                 }
@@ -362,8 +392,6 @@ statement
                 }
                 else
                 {
-                    //ss << ".[]> " << v << ", " << yylval.ival << "\n";
-
                     ss << ".[]> " << v << ", " << varidxlst.at(0) << "\n";
                     varidxlst.erase(varidxlst.begin());
                 }
@@ -508,7 +536,15 @@ expression
         {
             //cout << "expression -> multiplicative_expression ADD multiplicative_expression" << endl;
 
+            // probably collect up the stuff needed as values
+            // declare some temps and set them equal to the values
+            // declare a temp for the result
+            // add the temps store to result
+            // that result should get set to the assign statement
+            // most things are like "i := 1+2;"
+
             ss << "+" << "\n";
+            //ss << yylval.ival << "\n";
         }
     | mult-expr SUB expression
         {
@@ -569,9 +605,9 @@ term
             //cout << "term -> identifiers L_PAREN expressions R_PAREN" << endl;
 
             ss << "param" << "\n";
-            // expressions stored as params here
-            ss << "call" << "\n";
-            // identifier, stored expressions from param
+                // output params probably in a loop
+                // output a temp variable for the destination
+            ss << "call " << fid << ", " /* << destination */ << "\n";
         }
     | SUB var
         {

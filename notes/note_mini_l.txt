@@ -1,0 +1,87 @@
+Mini-L and MIL
+
+its hard to reverse engineer this since Mini-L and MIL are small academic languages
+the specification for the language exists as a railroad diagram form which you must derive the grammar
+there are only 3 valid "official" sources of mini-L code (fibonacci, mytest, primes)
+and they are the only compiled files provided as MIL code, with the mil_run interpreter
+when looking at the MIL files it is clear that they were compiled by 2 different compilers.
+
+#----------------------------------------
+
+functions in mini-l
+all functions return a scalar except main
+all parameters to a function are scalars
+the body is not empty and has at least one statement
+
+function name;
+beginparams
+    ...         ## main doesn't have parameters
+endparams
+beginlocals
+    ...
+endlocals
+beginbody
+    ...
+    return val  ## main doesn't have a return
+endbody
+
+#----------------------------------------
+
+The MIL interpreter assumes the following about a MIL program:
+
+1. Each line in the MIL file contains at most one MIL instruction
+2. Each line is at most 254 characters long
+3. All variables are defined before they are used
+4. Functions begin with a line of the form "func name" and end with the line "endfunc"
+
+Functions in the MIL language:
+
+Functions in the MIL language start with a line of the form "func name" and end with the line "endfunc".
+Parameters are passed to mil functions with the param command, and values are returned from functions.
+Inside functions, arguments are referenced using a positional notation.
+For example, the first argument specified with the param instruction prior to the current function call would be accessible as the name $0.
+All arguments are passed by value, and recursive function calls are supported.
+A semantically valid MIL program must contain a function named main.
+All functions (with the exception of main) must return a scalar value.
+The main function must not return any value.
+
+#----------------------------------------
+
+mini-l to mil
+
+a good example is the fibonacci program
+fibonacci has params and no locals, main has locals no params
+the first few lines of mil show the difference in how to declare/initialize
+
+    func fibonacci
+    . k
+    = k, $0
+
+    func main
+    . n
+    . fib_n
+
+the fibonacci declares k then sets it to the value of the first positional parameter
+main just has locals and they are declared but not initialized before the body of the function
+
+...
+
+then for the function call to fibonacci,
+a tmp variable is created and initialized for the parameter
+it is passed as a parameter with the param op
+a tmp variable is created and initialized for the return
+call the function with tmp var as destination
+
+    . __temp__13
+    = __temp__13, n
+    param __temp__13
+    . __temp__14
+    call fibonacci, __temp__14
+
+this is the general structure of calls
+there can be more than 1 parameters to a function
+also the tmp var as a parameter might have math done before passed
+
+
+
+

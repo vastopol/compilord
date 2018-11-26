@@ -1,0 +1,24 @@
+## parameterizable recurrence relation
+
+function genrec;
+beginparams
+	i,j,k : integer;
+endparams
+beginlocals
+endlocals
+beginbody
+	if (k <= 1) then return 1; endif;
+	return genrec(k - i) + genrec(k - j);
+endbody
+
+function main;
+beginparams
+endparams
+beginlocals
+	a,b,c,d : integer;
+endlocals
+beginbody
+	read a,b,c;
+	d := genrec(a,b,c);
+	write d;
+endbody

@@ -1,0 +1,228 @@
+Compiler design notes
+
+most of this is really badly put together. surprised it works so far.
+probably either need to fix or redesign later because a lot of shared data structures,
+and other weird code bs to make it work which is probably bad.
+
+#----------------------------------------
+
+COMPLETED TASKS
+anything with a "*" star is not 100% complete, see section on broken stuff
+
+integer ( negative/zero/positive )
+arrays  ( size >= 1 )
+
+DECLARE
+    declare local integer
+    declare local integers in a list
+    declare local array of integer
+    declare parameter integer
+READ
+    read integer
+    read integers in a list
+    read array index *
+WRITE
+    write integer
+    write integers in a list
+    write array index *
+ASSIGN
+    assign number to integer *
+    assign integer to integer
+    assign number to array index *
+    assign integer to array index *
+    // assign array index to integer
+    // assign array index to array index
+ARITHMETIC
+    // ...
+
+#----------------------------------------
+
+TO DO/BROKEN
+
+* should do
+    make 2 functions which returns names for temporary variables, and one for labels
+    would have to add global counters for temps and labels which last for the whole program,
+    cant reuse the temps or label numbers should just always make a new one.
+
+* broken stuff (FIXME)
+    --> negative numbers and assignment
+        negative numbers can be read/write but crash an assign statement
+        looks like mil can't do negatives, outputs error "Resolution of argument -1 failed."
+        this is not a compile error but a runtime error with mil_run interpreter
+        i := -1;
+        converts to
+        = i, -1
+
+    --> array index subscripting
+        the index has to be a number not variable or expression
+        either parses wrong outputs incorrect or usually crashes
+        read a[i-1];
+        a[j+1]; := i;
+
+    --> read/write
+        if use an array with non number index then makes incorrect code
+        read a[i]; becomes .[]< a, i
+        but actually this produces 2 scalar reads of the index variable
+        .< i
+        .< i
+
+#----------------------------------------
+
+TASK DESCRIPTIONS
+
+* function calls and passing parameters (NOT STARTED)
+    in the call instruction need to do parameters part and figure out destination for the return,
+    maybe make a temp var for each parameter and one for the destination too?
+
+
+* branch, loops, jump, label (NOT STARTED)
+    have not figured out to do labels or jumping with branches and loops
+    also need the bool stuff to work first since branches use comparisons to jump to a label,
+    and loops would get implemented as blocks of code with a compare and jump.
+    if while loop, compare on top and either jump over or run block and jump back to top
+    if do loop, label on top and compare at bottom, run block then compare and either jump to top or continue
+
+
+* booleans, comparisons (NOT STARTED)
+    not done at all yet
+
+
+* arithmetic (fixme)
+    need to have assignment working first before can do math properly i think...
+
+    the math operator has a higher precedence than the assign so it will output first.
+    probably should generate code in the math to create tmp vars and then when done
+    then assign the value of the final expression to the variable.
+
+    looks like in a ADD the yylval.ival is the right hand side
+    so for the assignment below it would be 3
+        i := 5 + 3
+    would maybe print something like
+        . tmp
+        + tmp, 5, 3
+        = i, tmp
+
+
+* assignment (fixme)
+    the "=" is used in statement for ASSIGN, and maybe var or elsewhere because of the temporary variables created.
+    if assign is "id := expr" then any expression can be complex but eventually returns an int
+    have to figure out when = vs []= or =[], have to check the type before
+
+    scalars are more straight forward, the yylval.ival or yylval.sval is the source value, no indexing.
+    with arrays the yylval.ival or yylval.sval is the source value to assign to destination
+    dst[idx] = src; --> []= dst, idx, src
+    the index is saved to a vector in the var rule.
+    have a variable check flag called vtag used in assignment.
+    it gets set in the term rule, numbers get 0, ids get 1.
+    this is so can tell apart index type, this is why used the vtag:
+    cant use yylval.sval to branch because if a[0] := 2 then yylval.sval is 0x2 and then not == NULL
+    so can't say if(yylval.sval){...} because it isnt == NULL == 0
+    basically only works if src is not 0
+
+    ---> still have not done the =[] since this probably requires emitting some code with temporary variables
+    probably have to declare a temp store the value for the array there, then store the temp into the destination
+
+    ---> still have to figure out how to do negative numbers, MIL supports them but cant seem to assign them
+
+
+* read/write (fixme)
+    form of "read/write vars" for the pattern
+    when it goes to var rule then ids are added to the rwvarslst vector.
+    when in read/write has to check type and decide int or array
+    then in loop the mil is output (similar to the declaration rule)
+    this works for integers, in var rule the id name is in yylval.sval is appended to rwvarslst,
+    it work for arrays but for arrays it is more complicated because of syntax, have to get the last id in the idslst and append to rwvarslst
+    with arrays the yylval.ival/yylval.sval is the index to read/write
+
+    ---> cant get it to work with variable index, this will out put 2 reads to the variable index instead
+
+
+* declarations/identifiers
+    so far the code is in and "declaration/declarationsP" and "identifer/identifierF"
+
+    when multiple identifiers declared on one line then multiple "." is generated for each id later in a loop after names are collected.
+        i, j : integer;
+
+    names are collected in identifier the strings are put into idslst vector
+    when that part returns to the declaration a loop will add ids to symtab if not yet in.
+    then the mil code is output in the same loop
+
+    adding to symbol table in the declaration part with a loop something like
+        symtab[*yylval.sval] = "0";
+        symtab[*yylval.sval] = to_string(yylval.ival); // yylval.ival is # of elements
+
+    note because of the way distinguish between scalar and array with scalar size == 0
+    there can be no empty arrays, ie. arrays must be size >= 1
+
+    it looks like arrays elements default value is set to 0 automatically
+
+    add an identifierF for functions so they dont get names added to symbol table
+    this is used where an identifer name is for a function
+        in the function rule
+        in term rule for function calls
+
+    add declarationsP so can initialize the parameters to the positional arguments $0, $1, ...
+    need to add another declarations part to tell when entering where the parameters are declared, since in different section.
+    trying to do similar to the way function identifierF works with a rule declarationsP
+    the parameters have to be initialized by the argument positions at the very beginning of functions.
+    should be able to set a flag so when in declarations will output positions $0, $1, ...
+    has to set pcnt flag in identifierF because declarationsP comes right after
+
+
+* function layout
+    each rule should write to the string stream then when done goes to function rule
+    in function rule output: "func", ss.str(), and "endfunc"
+    save output to vector of strings where each string is the mil code for a function
+    after output reset ss.str() to "" and clear the stringstream
+    also save symbol table to vector of maps
+
+#----------------------------------------
+
+DATA STRUCTURES: (the more important ones)
+
+int pcnt
+    used to tell if declaring parameter, so can output the position arguments
+    set to 1 in identiferF
+    set to 0 at the end of declarationsP
+
+int pnum
+    used to count the parameters when outputting the positional arguments $0, $1, ...
+    incremented in the declaration loop
+    reset to 0 at the end of declarationsP
+
+int fcnt
+    used for output the name of a function as the first part of a MIL block
+    save function name to a string,
+    if fcnt == 0 write name to string stream and increment
+    reset to 0 after the function is finished
+
+int vtag
+    used for helping differentiate the assign statements
+    0 = num, set in term NUMBER
+    1 = str, set in term var
+    reset to -1 after each assign
+
+vector<string> rwvarslst;
+    read/write,assign list
+    strings get appended in var rule. appends for READ, WRITE, ASSIGN
+    clear after assign
+    clear in read/write after loop
+    clear in function after scope
+
+vector<string> varidxlst;
+    assign array index list
+    strings get appended in var rule if is array
+    will append either to_string(yylval.ival) or *yylval.sval
+
+vector<string> idslst;
+    id declare list
+    strings get appended in identifier rule
+    clear in declaration after loop
+    clear in function after scope
+
+map<string,string> symtab;
+    function symbol table
+    clear in declaration after loop
+    clear in function after scope
+
+

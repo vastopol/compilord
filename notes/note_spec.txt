@@ -1,0 +1,37 @@
+For specifications see:
+
+The MINI-L Source Code Language
+https://www.cs.ucr.edu/~gkaur007/webpages/mini_l.html
+
+Syntax Diagrams for the MINI-L Language
+https://www.cs.ucr.edu/~gkaur007/webpages/syntax.html
+
+Output Format for Lexical Analyzer
+https://www.cs.ucr.edu/~gkaur007/webpages/token_list_format.html
+
+Output Format for Parser
+https://www.cs.ucr.edu/~gkaur007/webpages2/production_rule_format.html
+
+Output Format for Code Generator
+https://www.cs.ucr.edu/~gkaur007/webpages3/code_output_format.html
+
+The MIL Intermediate Code Representation
+https://www.cs.ucr.edu/~gkaur007/webpages3/mil.html
+
+Errata:
+
+it appears as though the syntax of Mini-L has changed at some point (possibly multiple times).
+some of the examples of .min programs contain different keywords.
+
+new specification tokens:
+    FUNCTION, BEGIN_PARAMS, END_PARAMS, BEGIN_LOCALS, END_LOCALS, BEGIN_BODY, END_BODY
+
+older specification tokens: (no longer present)
+    PROGRAM, BEGIN_PROGRAM, END_PROGRAM, BREAK, EXIT, QUESTION
+
+another possible old token: (no longer present)
+    FOREACH
+
+old spec:
+http://www.cs.ucr.edu/~neamtiu/teaching/Winter2009/CS152/Project-Phase-II/mini_l.html
+

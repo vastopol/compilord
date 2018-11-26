@@ -24,8 +24,8 @@ beginlocals
 
     ## TEST: declare array
     ## PASS: can declare local array of integers
-        a : array [5]  of integer;
-        b : array [10] of integer;
+        ## a : array [5]  of integer;
+        ## b : array [10] of integer;
 
 endlocals
 
@@ -62,14 +62,14 @@ beginbody
         ## a[0] := b[0];  write a[0];  ## arr = arr --> FAIL (not done yet)
         ## k := a[0];     write k;     ## int = arr --> FAIL (not done yet)
         ## a[k] := 0;     write a[k];  ## arr = int --> FAIL (variable subscript)
-        ## j := a[k];     write j;     ## int = arr --> FAIL (not done yet)&&(variable subscript)
+        ## j := a[k];     write j;     ## int = arr --> FAIL (variable subscript)&&(not done yet)
 
     ## TEST: arithmetic expressions (i,j,k)
     ## PASS: none
     ## FAIL: all
         ## num op num
-        ## i := 0;
-        ## i := 5 + 3;  write i;  i := 0;  ## 8
+        i := 0;
+        i := 5 + 3;  write i;  i := 0;  ## 8
         ## i := 5 - 3;  write i;  i := 0;  ## 2
         ## i := 5 * 3;  write i;  i := 0;  ## 15
         ## i := 5 / 3;  write i;  i := 0;  ## 1
