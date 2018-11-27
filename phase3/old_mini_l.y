@@ -105,6 +105,7 @@ vector< map<string,string> > symtablst;
 %left MOD
 %left DIV
 %left MULT
+%right UMINUS
 %left R_SQUARE_BRACKET
 %left L_SQUARE_BRACKET
 %left R_PAREN
@@ -417,7 +418,37 @@ statement
     ;
 
 bool-expr
-    : TRUE
+    : relation-and-expr
+        {
+            //cout << "bool_exp -> relation_and_exp" << endl;
+        }
+    | relation-and-expr OR relation-and-expr
+        {
+            //cout << "bool_exp -> relation_and_exp OR relation_and_exp" << endl;
+
+            ss << "||" << "\n";
+        }
+    ;
+
+relation-and-expr
+    : relation-expr
+        {
+            //cout << "relation_and_exp -> relation_exp" << endl;
+        }
+    | relation-expr AND relation-and-expr
+        {
+            //cout << "relation_and_exp -> relation_exp AND relation_exp" << endl;
+
+            ss << "&&" << "\n";
+        }
+    ;
+
+relation-expr
+    : expression comp expression
+        {
+            //cout << "relation_exp -> expression comp expression" << endl;
+        }
+    | TRUE
         {
             //cout << "relation_exp -> TRUE" << endl;
         }
@@ -429,53 +460,56 @@ bool-expr
         {
             //cout << "relation_exp -> L_PAREN bool-exp R_PAREN" << endl;
         }
-    | NOT bool-expr
+    | NOT expression comp expression
         {
             //cout << "relation_exp -> NOT expression comp expression" << endl;
         }
-    | bool-expr AND bool-expr
+    | NOT TRUE
         {
-            //cout << "relation_and_exp -> relation_exp AND relation_exp" << endl;
-
-            ss << "&&" << "\n";
+            //cout << "relation_exp -> NOT TRUE" << endl;
         }
-    | bool-expr OR bool-expr
+    | NOT FALSE
         {
-            //cout << "bool_exp -> relation_and_exp OR relation_and_exp" << endl;
-
-            ss << "||" << "\n";
+            //cout << "relation_exp -> NOT FALSE" << endl;
         }
-    | expression EQ expression
+    | NOT L_PAREN bool-expr R_PAREN
+        {
+            //cout << "relation_exp -> NOT L_PAREN bool-exp R_PAREN" << endl;
+        }
+    ;
+
+comp
+    : EQ
         {
             //cout << "comp -> EQ" << endl;
 
             ss << "==" << "\n";
         }
-    | expression NEQ expression
+    | NEQ
         {
             //cout << "comp -> NEQ" << endl;
 
             ss << "!=" << "\n";
         }
-    | expression GT expression
+    | GT
         {
             //cout << "comp -> GT" << endl;
 
             ss << ">" << "\n";
         }
-    | expression LT expression
+    | LT
         {
             //cout << "comp -> LT" << endl;
 
             ss << "<" << "\n";
         }
-    | expression GTE expression
+    | GTE
         {
             //cout << "comp -> GTE" << endl;
 
             ss << ">=" << "\n";
         }
-    | expression LTE expression
+    | LTE
         {
             //cout << "comp -> LTE" << endl;
 
@@ -499,29 +533,11 @@ expressions
     ;
 
 expression
-    : term
+    : mult-expr
         {
-            //cout << "multiplicative_expression -> term" << endl;
+            //cout << "expression -> multiplicative_expression" << endl;
         }
-    | term MULT expression
-        {
-            //cout << "multiplicative_expression -> term MULT term" << endl;
-
-            ss << "*" << "\n";
-        }
-    | term DIV expression
-        {
-            //cout << "multiplicative_expression -> term DIV term" << endl;
-
-            ss << "/" << "\n";
-        }
-    | term MOD expression
-        {
-            //cout << "multiplicative_expression -> term MOD term" << endl;
-
-            ss << "%" << "\n";
-        }
-    | term ADD expression
+    | mult-expr ADD expression
         {
             //cout << "expression -> multiplicative_expression ADD multiplicative_expression" << endl;
 
@@ -535,11 +551,36 @@ expression
             ss << "+" << "\n";
             //ss << yylval.ival << "\n";
         }
-    | term SUB expression
+    | mult-expr SUB expression
         {
             //cout << "expression -> multiplicative_expression SUB multiplicative_expression" << endl;
 
             ss << "-" << "\n";
+        }
+    ;
+
+mult-expr
+    : term
+        {
+            //cout << "multiplicative_expression -> term" << endl;
+        }
+    | term MULT term
+        {
+            //cout << "multiplicative_expression -> term MULT term" << endl;
+
+            ss << "*" << "\n";
+        }
+    | term DIV term
+        {
+            //cout << "multiplicative_expression -> term DIV term" << endl;
+
+            ss << "/" << "\n";
+        }
+    | term MOD term
+        {
+            //cout << "multiplicative_expression -> term MOD term" << endl;
+
+            ss << "%" << "\n";
         }
     ;
 
