@@ -33,6 +33,11 @@ void yyerror(const char *msg);
 
 // data structures grouped by use
 
+int lblnum = 0;           // # of labels counter
+int tmpnum = 0;           // # of tmp vars
+string lblmkr();          // produce new label name
+string tmpmkr();          // produce new tmp var name
+
 stringstream ss;          // generate code to string stream as parses
 string buf;               // buffer to read from string stream
 string funs;              // write out function from string stream
@@ -605,9 +610,11 @@ term
             //cout << "term -> identifiers L_PAREN expressions R_PAREN" << endl;
 
             ss << "param" << "\n";
-                // output params probably in a loop
-                // output a temp variable for the destination
-            ss << "call " << fid << ", " /* << destination */ << "\n";
+            // output params probably in a loop
+
+            string t_dst = tmpmkr();    // output a temp variable for the destination
+            ss << ". " << t_dst << "\n";
+            ss << "call " << fid << ", " << t_dst << "\n";
         }
     | SUB var
         {
@@ -705,6 +712,22 @@ int main(int argc, char** argv)
 
     print_funs();
     //print_symtabs();
+}
+
+string lblmkr()
+{
+    string s = "_label";
+    s += to_string(lblnum);
+    lblnum++;
+    return s;
+}
+
+string tmpmkr()
+{
+    string s = "_temp";
+    s += to_string(tmpnum);
+    tmpnum++;
+    return s;
 }
 
 void print_funs()

@@ -39,11 +39,6 @@ ARITHMETIC
 
 TO DO/BROKEN
 
-* should do
-    make 2 functions which returns names for temporary variables, and one for labels
-    would have to add global counters for temps and labels which last for the whole program,
-    cant reuse the temps or label numbers should just always make a new one.
-
 * broken stuff (FIXME)
     --> negative numbers and assignment
         negative numbers can be read/write but crash an assign statement
@@ -73,6 +68,9 @@ TASK DESCRIPTIONS
 * function calls and passing parameters (NOT STARTED)
     in the call instruction need to do parameters part and figure out destination for the return,
     maybe make a temp var for each parameter and one for the destination too?
+
+    able to declare a temp var for the destination and pass that to call,
+    now just need to figure out how to do the parameters
 
 
 * branch, loops, jump, label (NOT STARTED)
