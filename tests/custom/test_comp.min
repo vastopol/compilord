@@ -64,7 +64,7 @@ beginbody
         ## a[k] := 0;     write a[k];  ## arr = int --> FAIL (variable subscript)
         ## j := a[k];     write j;     ## int = arr --> FAIL (variable subscript)&&(not done yet)
 
-    ## TEST: arithmetic expressions (i,j,k)
+    ## TEST: arithmetic expressions (i,j,k,a)
     ## PASS: num op num, int op num, num op int, int op int
     ## FAIL: math with an array index on rhs
         ## num op num
@@ -106,5 +106,15 @@ beginbody
         ## a[0] := 1 + 1; write a[0];      ## 2
         ## a[0] := j + k; write a[0];      ## 3
         ## i := a[0] + 1; write i;         ## 2  --> FAIL (does 0 + 1, doesnt see the a)
+
+    ## TEST: boolean expressions with if statements (i,j,k)
+    ## PASS: none
+    ## FAIL: all
+        i := 1; j := 2; k := 3;
+        ## i := 3; j := 2; k := 1;
+
+        if i <= j then write i; endif;
+
+        ## if i >= j then write i; else write j; endif;
 
 endbody

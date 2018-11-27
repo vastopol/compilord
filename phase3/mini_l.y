@@ -387,13 +387,32 @@ statement
         {
             //cout << "statement -> IF bool_exp THEN statements ENDIF" << endl;
 
-            ss << "?:= " << "\n";
+            string lbl_false = lblmkr();
+            string lbl_true = lblmkr();
+            string lbl_end = lblmkr();
+
+            ss << "?:= " << lbl_true << ", " << lasttmp << "\n";
+            ss << ": " << lbl_false << "\n";
+                ss << ":= " << lbl_end << "\n";
+            ss << ": " << lbl_true << "\n";
+                //ss << /* statements */ << "\n";
+            ss << ": " << lbl_end << "\n";
         }
     | IF bool-expr THEN statements ELSE statements ENDIF
         {
             //cout << "statement -> IF bool_exp THEN statements ELSE statements ENDIF" << endl;
 
-            ss << "?:= " << "\n";
+            string lbl_false = lblmkr();
+            string lbl_true = lblmkr();
+            string lbl_end = lblmkr();
+
+            ss << "?:= " << lbl_true << ", " << lasttmp << "\n";
+            ss << ": " << lbl_false << "\n";
+                //ss << /* statements */ << "\n";
+                ss << ":= " << lbl_end << "\n";
+            ss << ": " << lbl_true << "\n";
+                //ss << /* statements */ << "\n";
+            ss << ": " << lbl_end << "\n";
         }
     | WHILE bool-expr BEGINLOOP statements ENDLOOP
         {
@@ -463,10 +482,18 @@ bool-expr
     : TRUE
         {
             //cout << "relation_exp -> TRUE" << endl;
+
+            vtag = 0; // for the assign src is num
+
+            expvec.push_back(to_string(1));
         }
     | FALSE
         {
             //cout << "relation_exp -> FALSE" << endl;
+
+            vtag = 0; // for the assign src is num
+
+            expvec.push_back(to_string(0));
         }
     | L_PAREN bool-expr R_PAREN
         {
@@ -522,7 +549,30 @@ bool-expr
         {
             //cout << "comp -> LTE" << endl;
 
-            ss << "<=" << "\n";
+            //ss << "<=" << "\n";
+
+            //outarr(expvec);
+
+            maths = 1;
+
+            string rhs = tmpmkr(); // result
+            ss << ". " << rhs << "\n";
+            ss << "= " << rhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string lhs = tmpmkr(); // result
+            ss << ". " << lhs << "\n";
+            ss << "= " << lhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string res = tmpmkr(); // result
+            ss << ". " << res << "\n";
+            ss << "<= " << res << ", " << lhs << ", " << rhs << "\n";
+
+            expvec.push_back(res);
+
+            //outarr(expvec);
+
         }
     ;
 

@@ -68,8 +68,7 @@ TO DO/BROKEN
 TASK DESCRIPTIONS
 
 * function calls and passing parameters (NOT STARTED)
-    in the call instruction need to do parameters part and figure out destination for the return,
-    maybe make a temp var for each parameter and one for the destination too?
+    in the call instruction need to do parameters part maybe make a temp var for each parameter?
 
     able to declare a temp var for the destination and pass that to call,
     now just need to figure out how to do the parameters
@@ -82,12 +81,26 @@ TASK DESCRIPTIONS
     if while loop, compare on top and either jump over or run block and jump back to top
     if do loop, label on top and compare at bottom, run block then compare and either jump to top or continue
 
+    if x then y; else z; endif;
+
+    ?= l_true, x
+    : l_false
+        z
+        := l_end
+    : l_true
+        y
+    : l_end
+
 
 * booleans, comparisons (NOT STARTED)
-    not done at all yet
+    trying to do like the arithmetic examples
+
+    not is probably done like a negative number
 
 
-* arithmetic
+
+
+* arithmetic (fixme)
 
     most things are like "i := 1+2;"
     the assign comes after the arithmetic
@@ -109,6 +122,8 @@ TASK DESCRIPTIONS
         + tmp3, tmp1, tmp2
     then the assign would use the last temp variable declared
         = i, tmp3
+
+    --> the array index on the rhs does not properly parse
 
 
 * assignment (fixme)
