@@ -35,6 +35,8 @@ void yyerror(const char *msg);
 
 int lblnum = 0;           // # of labels counter
 int tmpnum = 0;           // # of tmp vars
+string lastlbl;
+string lasttmp;
 string lblmkr();          // produce new label name
 string tmpmkr();          // produce new tmp var name
 
@@ -44,6 +46,7 @@ string funs;              // write out function from string stream
 vector<string> funslst;   // all the compiled functions code
 
 int vtag;                 // in assign flag for choosing: 0 =  num, 1 = str
+int neg;                  // in assign to tell if negative number
 vector<string> rwvarslst; // var names in read,write,assign
 vector<string> varidxlst; // array index
 
@@ -54,6 +57,9 @@ int pcnt = 0;             // param counter for ss
 int pnum = 0;             // number of params
 
 vector<string> idslst;    // idents for symbol table
+
+int maths;              // is in math expression
+vector<string> expvec;  // expressions
 
 map<string,string> symtab;
 vector< map<string,string> > symtablst;
@@ -89,6 +95,7 @@ vector< map<string,string> > symtablst;
 %type  <ival> expression
 
     */
+
 
 %right ASSIGN
 %left OR
@@ -290,7 +297,7 @@ statement
         {
             //cout << "statement -> var ASSIGN expression" << endl;
 
-            // useful later when fixing the =[] part
+            // useful later probably
             /*output("id");
             outarr(idslst);
             output("");
@@ -299,7 +306,11 @@ statement
             output("");
             output("index");
             outarr(varidxlst);
-            output("");*/
+            output("");
+
+            outarr(expvec);
+            outarr(rwvarslst);
+            output(lasttmp);*/
 
             map<string,string>::iterator it = symtab.find(rwvarslst.at(0));
             if(it == symtab.end()){ yyerror("error: in assign null var encountered"); }
@@ -310,11 +321,25 @@ statement
 
                 if(vtag == 0) // was a number
                 {
-                    ss << yylval.ival << "\n";  // int = num
+                    if(maths == 1 || neg == 1) // math expressions
+                    {
+                        ss << lasttmp << "\n"; // int = expr
+                    }
+                    else
+                    {
+                        ss << yylval.ival << "\n";  // int = num
+                    }
                 }
                 else // need to check yylval.sval is int or arr
                 {
-                    ss << *yylval.sval << "\n";  // int = int
+                    if(maths == 1) // math expressions
+                    {
+                        ss << lasttmp << "\n";
+                    }
+                    else
+                    {
+                        ss << *yylval.sval << "\n";  // int = int
+                    }
 
                     // int = arr
                     // fixme
@@ -326,17 +351,35 @@ statement
 
                 if(vtag == 0) // was a number
                 {
-                    ss << yylval.ival << "\n";  // arr = num
+                    if(maths == 1 || neg == 1) // math expressions
+                    {
+                        ss << lasttmp << "\n"; // arr = expr
+                    }
+                    else
+                    {
+                        ss << yylval.ival << "\n";  // arr = num
+                    }
                 }
                 else // need to check yylval.sval is int or arr
                 {
-                    ss << *yylval.sval << "\n";  // arr = int
+                    if(maths == 1) // math expressions
+                    {
+                        ss << lasttmp << "\n";
+                    }
+                    else
+                    {
+                        ss << *yylval.sval << "\n";  // arr = int
+                    }
 
                     // arr = arr
                     // fixme
                 }
                 varidxlst.erase(varidxlst.begin());
             }
+
+            maths = 0;         // done
+            neg = 0;
+
             vtag = -1;         // reset var tag
             rwvarslst.clear(); // remove var from list
         }
@@ -507,39 +550,131 @@ expression
         {
             //cout << "multiplicative_expression -> term MULT term" << endl;
 
-            ss << "*" << "\n";
+            //outarr(expvec);
+
+            maths = 1;
+
+            string rhs = tmpmkr(); // result
+            ss << ". " << rhs << "\n";
+            ss << "= " << rhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string lhs = tmpmkr(); // result
+            ss << ". " << lhs << "\n";
+            ss << "= " << lhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string res = tmpmkr(); // result
+            ss << ". " << res << "\n";
+            ss << "* " << res << ", " << lhs << ", " << rhs << "\n";
+
+            expvec.push_back(res);
+
+            //outarr(expvec);
         }
     | term DIV expression
         {
             //cout << "multiplicative_expression -> term DIV term" << endl;
 
-            ss << "/" << "\n";
+            //outarr(expvec);
+
+            maths = 1;
+
+            string rhs = tmpmkr(); // result
+            ss << ". " << rhs << "\n";
+            ss << "= " << rhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string lhs = tmpmkr(); // result
+            ss << ". " << lhs << "\n";
+            ss << "= " << lhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string res = tmpmkr(); // result
+            ss << ". " << res << "\n";
+            ss << "/ " << res << ", " << lhs << ", " << rhs << "\n";
+
+            expvec.push_back(res);
+
+            //outarr(expvec);
         }
     | term MOD expression
         {
             //cout << "multiplicative_expression -> term MOD term" << endl;
 
-            ss << "%" << "\n";
+            //outarr(expvec);
+
+            maths = 1;
+
+            string rhs = tmpmkr(); // result
+            ss << ". " << rhs << "\n";
+            ss << "= " << rhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string lhs = tmpmkr(); // result
+            ss << ". " << lhs << "\n";
+            ss << "= " << lhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string res = tmpmkr(); // result
+            ss << ". " << res << "\n";
+            ss << "% " << res << ", " << lhs << ", " << rhs << "\n";
+
+            expvec.push_back(res);
+
+            //outarr(expvec);
         }
     | term ADD expression
         {
             //cout << "expression -> multiplicative_expression ADD multiplicative_expression" << endl;
 
-            // probably collect up the stuff needed as values
-            // declare some temps and set them equal to the values
-            // declare a temp for the result
-            // add the temps store to result
-            // that result should get set to the assign statement
-            // most things are like "i := 1+2;"
+            //outarr(expvec);
 
-            ss << "+" << "\n";
-            //ss << yylval.ival << "\n";
+            maths = 1;
+
+            string rhs = tmpmkr(); // result
+            ss << ". " << rhs << "\n";
+            ss << "= " << rhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string lhs = tmpmkr(); // result
+            ss << ". " << lhs << "\n";
+            ss << "= " << lhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string res = tmpmkr(); // result
+            ss << ". " << res << "\n";
+            ss << "+ " << res << ", " << lhs << ", " << rhs << "\n";
+
+            expvec.push_back(res);
+
+            //outarr(expvec);
         }
     | term SUB expression
         {
             //cout << "expression -> multiplicative_expression SUB multiplicative_expression" << endl;
 
-            ss << "-" << "\n";
+            //outarr(expvec);
+
+            maths = 1;
+
+            string rhs = tmpmkr(); // result
+            ss << ". " << rhs << "\n";
+            ss << "= " << rhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string lhs = tmpmkr(); // result
+            ss << ". " << lhs << "\n";
+            ss << "= " << lhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string res = tmpmkr(); // result
+            ss << ". " << res << "\n";
+            ss << "- " << res << ", " << lhs << ", " << rhs << "\n";
+
+            expvec.push_back(res);
+
+            //outarr(expvec);
         }
     ;
 
@@ -559,6 +694,8 @@ term
             //ss << yylval.ival << "\n";  // probably comment out eventually
 
             vtag = 0; // for the assign src is num
+
+            expvec.push_back(to_string(yylval.ival));
         }
     | L_PAREN expression R_PAREN
         {
@@ -583,7 +720,18 @@ term
         {
             //cout << "term -> SUB NUMBER" << " " << yylval.ival << endl;
 
-            ss << (-1 * yylval.ival) << "\n";  // not sure...
+            // ss << (-1 * yylval.ival) << "\n";  // not sure...
+
+            vtag = 0; // for the assign src is num
+
+            neg = 1; // for assign to know if neg
+
+            string neg_s = tmpmkr();
+
+            ss << ". " << neg_s << "\n";
+            ss << "- " << neg_s << ", 0, " << yylval.ival << "\n";
+
+            expvec.push_back(neg_s);
         }
     | SUB L_PAREN expression R_PAREN
         {
@@ -618,6 +766,8 @@ var
             //output(*yylval.sval);
 
             rwvarslst.push_back(*yylval.sval);
+
+            expvec.push_back(*yylval.sval);
         }
     | identifier L_SQUARE_BRACKET expression R_SQUARE_BRACKET
         {
@@ -678,6 +828,7 @@ string lblmkr()
     string s = "_label";
     s += to_string(lblnum);
     lblnum++;
+    lastlbl = s;
     return s;
 }
 
@@ -686,6 +837,7 @@ string tmpmkr()
     string s = "_temp";
     s += to_string(tmpnum);
     tmpnum++;
+    lasttmp = s;
     return s;
 }
 

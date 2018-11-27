@@ -7,7 +7,8 @@ and other weird code bs to make it work which is probably bad.
 #----------------------------------------
 
 COMPLETED TASKS
-anything with a "*" star is not 100% complete, see section on broken stuff
+anything with a "*" is not 100% complete, see section on broken stuff (arrays)
+anything with a "//" is not implemented yet
 
 integer ( negative/zero/positive )
 arrays  ( size >= 1 )
@@ -26,13 +27,16 @@ WRITE
     write integers in a list
     write array index *
 ASSIGN
-    assign number to integer *
+    assign number to integer
     assign integer to integer
     assign number to array index *
     assign integer to array index *
     // assign array index to integer
     // assign array index to array index
 ARITHMETIC
+    add, sub, mul, div, mod
+    works for most expression combinations including parenthesis
+BOOLEANS
     // ...
 
 #----------------------------------------
@@ -40,26 +44,24 @@ ARITHMETIC
 TO DO/BROKEN
 
 * broken stuff (FIXME)
-    --> negative numbers and assignment
-        negative numbers can be read/write but crash an assign statement
-        looks like mil can't do negatives, outputs error "Resolution of argument -1 failed."
-        this is not a compile error but a runtime error with mil_run interpreter
-        i := -1;
-        converts to
-        = i, -1
 
     --> array index subscripting
         the index has to be a number not variable or expression
         either parses wrong outputs incorrect or usually crashes
-        read a[i-1];
-        a[j+1]; := i;
+            read a[i-1];
+            a[j+1]; := i;
 
     --> read/write
         if use an array with non number index then makes incorrect code
         read a[i]; becomes .[]< a, i
         but actually this produces 2 scalar reads of the index variable
-        .< i
-        .< i
+            .< i
+            .< i
+
+    --> array index on rhs of expression
+            i := a[0] + 1; write i;
+         should output 2, but it doesn't
+         does 0 + 1, doesnt see the a and adds the index instead.
 
 #----------------------------------------
 
@@ -85,20 +87,28 @@ TASK DESCRIPTIONS
     not done at all yet
 
 
-* arithmetic (fixme)
-    need to have assignment working first before can do math properly i think...
+* arithmetic
 
-    the math operator has a higher precedence than the assign so it will output first.
-    probably should generate code in the math to create tmp vars and then when done
-    then assign the value of the final expression to the variable.
+    most things are like "i := 1+2;"
+    the assign comes after the arithmetic
 
-    looks like in a ADD the yylval.ival is the right hand side
-    so for the assignment below it would be 3
+    have to collect up the stuff needed as values
+    declare some temps and set them equal to the values
+    declare a temp for the result
+    add the temps and store to result
+    that result should get set to the assign statement
+
+    for example an addition assignment
         i := 5 + 3
-    would maybe print something like
-        . tmp
-        + tmp, 5, 3
-        = i, tmp
+    would print something like
+        . tmp1
+        = tmp1, 5
+        .tmp2
+        = tmp2, 3
+        .tmp3
+        + tmp3, tmp1, tmp2
+    then the assign would use the last temp variable declared
+        = i, tmp3
 
 
 * assignment (fixme)
@@ -117,10 +127,19 @@ TASK DESCRIPTIONS
     so can't say if(yylval.sval){...} because it isnt == NULL == 0
     basically only works if src is not 0
 
+    negative numbers, MIL supports them but cant seem to assign them
+    negative numbers can be read/write but crash an assign statement and outputs error "Resolution of argument -1 failed."
+    this is not a compile error but a runtime error with mil_run interpreter
+        i := -1;
+    converts to
+        = i, -1
+    to fix this have to do something like
+        . tmp
+        - tmp, 0, 1
+        = i, tmp
+
     ---> still have not done the =[] since this probably requires emitting some code with temporary variables
     probably have to declare a temp store the value for the array there, then store the temp into the destination
-
-    ---> still have to figure out how to do negative numbers, MIL supports them but cant seem to assign them
 
 
 * read/write (fixme)
@@ -177,6 +196,18 @@ TASK DESCRIPTIONS
 #----------------------------------------
 
 DATA STRUCTURES: (the more important ones)
+
+vector<string> expvec
+    vector for the math expressions
+    pushed to in number, sub number, and var
+
+int neg
+    set to 1 in in "term sub number"
+    set to 0 after assign
+
+int maths
+    set to 1 in the expression
+    set to 0 after assign
 
 int pcnt
     used to tell if declaring parameter, so can output the position arguments

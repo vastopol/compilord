@@ -11,7 +11,7 @@ function main()
 {
     build_cc
     test_cc
-    # cc_files
+    cc_files
     # test_files
     # clean_up
 }

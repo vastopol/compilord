@@ -24,8 +24,8 @@ beginlocals
 
     ## TEST: declare array
     ## PASS: can declare local array of integers
-        ## a : array [5]  of integer;
-        ## b : array [10] of integer;
+        a : array [5]  of integer;
+        b : array [10] of integer;
 
 endlocals
 
@@ -52,7 +52,7 @@ beginbody
     ## TEST: assign integer/array (i,j,k,a,b)
     ## PASS: int = num, int = int, arr = num, arr = int
     ## FAIL: arr = arr, int = arr, array subscript that isn't number
-        ## i := -1;       write i;     ## int = num --> FAIL (negative number)
+        ## i := -1;       write i;     ## int = num
         ## i := 0;        write i;     ## int = num
         ## j := 1;        write j;     ## int = num
         ## k := j;        write k;     ## int = int
@@ -65,11 +65,11 @@ beginbody
         ## j := a[k];     write j;     ## int = arr --> FAIL (variable subscript)&&(not done yet)
 
     ## TEST: arithmetic expressions (i,j,k)
-    ## PASS: none
-    ## FAIL: all
+    ## PASS: num op num, int op num, num op int, int op int
+    ## FAIL: math with an array index on rhs
         ## num op num
-        i := 0;
-        i := 5 + 3;  write i;  i := 0;  ## 8
+        ## i := 0;
+        ## i := 5 + 3;  write i;  i := 0;  ## 8
         ## i := 5 - 3;  write i;  i := 0;  ## 2
         ## i := 5 * 3;  write i;  i := 0;  ## 15
         ## i := 5 / 3;  write i;  i := 0;  ## 1
@@ -95,5 +95,16 @@ beginbody
         ## i := j * k;  write i;  i := 0;  ## 15
         ## i := j / k;  write i;  i := 0;  ## 1
         ## i := j % k;  write i;  i := 0;  ## 2
+        ## more expressions
+        ## j := 10; k := 20;
+        ## i := 1 + 2 + 3; write i;        ## 6
+        ## i := 1 + j + 2 + k; write i;    ## 33
+        ## i := ( 1 - 2 ); write i;        ## -1
+        ## expressions and arrays
+        ## j := 1; k := 2;
+        ## a[0] := -1; write a[0];         ## -1
+        ## a[0] := 1 + 1; write a[0];      ## 2
+        ## a[0] := j + k; write a[0];      ## 3
+        ## i := a[0] + 1; write i;         ## 2  --> FAIL (does 0 + 1, doesnt see the a)
 
 endbody
