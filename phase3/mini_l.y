@@ -88,13 +88,14 @@ vector< map<string,string> > symtablst;
 
 %token NUMBER
 
-    /*
-
-%token <chval> IDENT
-%token <ival> NUMBER
-%type  <ival> expression
-
-    */
+%type   <sval>     program
+%type   <sval>     declaration
+%type   <sval>     statements
+%type   <sval>     expressions
+%type   <sval>     function
+%type   <sval>     bool-expr
+%type   <sval>     expression
+%type   <sval>     statement
 
 
 %right ASSIGN
@@ -292,6 +293,20 @@ statements
         }
     ;
 
+statementsB
+    : /* epsilon */
+        {
+            //cout << "statements -> epsilon" << endl;
+        }
+    | statement SEMICOLON statementsB
+        {
+            //cout << "statements -> statement SEMICOLON statements" << endl;
+            //output($1);
+            //output(*$1);
+            //outarr(expvec);
+        }
+    ;
+
 statement
     : var ASSIGN expression
         {
@@ -323,7 +338,8 @@ statement
                 {
                     if(maths == 1 || neg == 1) // math expressions
                     {
-                        ss << lasttmp << "\n"; // int = expr
+                        //ss << lasttmp << "\n"; // int = expr
+                        ss << expvec.at(expvec.size()-1) << "\n";
                     }
                     else
                     {
@@ -383,7 +399,7 @@ statement
             vtag = -1;         // reset var tag
             rwvarslst.clear(); // remove var from list
         }
-    | IF bool-expr THEN statements ENDIF
+    | IF bool-expr THEN statementsB ENDIF
         {
             //cout << "statement -> IF bool_exp THEN statements ENDIF" << endl;
 
@@ -393,9 +409,11 @@ statement
 
             ss << "?:= " << lbl_true << ", " << lasttmp << "\n";
             ss << ": " << lbl_false << "\n";
-                ss << ":= " << lbl_end << "\n";
+            ss << ":= " << lbl_end << "\n";
             ss << ": " << lbl_true << "\n";
+
                 //ss << /* statements */ << "\n";
+
             ss << ": " << lbl_end << "\n";
         }
     | IF bool-expr THEN statements ELSE statements ENDIF
@@ -408,10 +426,14 @@ statement
 
             ss << "?:= " << lbl_true << ", " << lasttmp << "\n";
             ss << ": " << lbl_false << "\n";
+
                 //ss << /* statements */ << "\n";
-                ss << ":= " << lbl_end << "\n";
+
+            ss << ":= " << lbl_end << "\n";
             ss << ": " << lbl_true << "\n";
+
                 //ss << /* statements */ << "\n";
+
             ss << ": " << lbl_end << "\n";
         }
     | WHILE bool-expr BEGINLOOP statements ENDLOOP
@@ -473,8 +495,13 @@ statement
             //cout << "statement -> RETURN expression" << endl;
 
             //output(yylval.ival); // might be return value?
+            //outarr(expvec);
 
-            ss << "ret " << "\n";
+            string retval = tmpmkr(); // result?
+            ss << ". " << retval << "\n";
+            ss << "= " << retval << ", " << expvec.at(expvec.size()-1) << "\n";
+
+            ss << "ret " << retval << "\n";
         }
     ;
 
@@ -755,12 +782,20 @@ term
         {
             //cout << "term -> identifiers L_PAREN expressions R_PAREN" << endl;
 
-            ss << "param" << "\n";
-            // output params probably in a loop
 
-            string t_dst = tmpmkr();    // output a temp variable for the destination
+            // output params probably in a loop
+            //output(lasttmp);
+            //outarr(expvec); out("\n");
+
+            ss << "param ";
+            ss << expvec.at(expvec.size()-1); // can only do 1 param currently
+            ss << "\n";
+            expvec.pop_back();
+
+            string t_dst = tmpmkr();    // output a temp variable for the destination && call func
             ss << ". " << t_dst << "\n";
             ss << "call " << fid << ", " << t_dst << "\n";
+            expvec.push_back(t_dst);
         }
     | SUB var
         {

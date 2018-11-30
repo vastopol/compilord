@@ -70,8 +70,9 @@ TASK DESCRIPTIONS
 * function calls and passing parameters (NOT STARTED)
     in the call instruction need to do parameters part maybe make a temp var for each parameter?
 
+    can output one parameter as the last entry in expvec
     able to declare a temp var for the destination and pass that to call,
-    now just need to figure out how to do the parameters
+    now just need to figure out how to do multiple parameters
 
 
 * branch, loops, jump, label (NOT STARTED)
@@ -91,11 +92,16 @@ TASK DESCRIPTIONS
         y
     : l_end
 
+    trying to do something where has a statementsB for branches...
+
+
+
 
 * booleans, comparisons (NOT STARTED)
     trying to do like the arithmetic examples
-
     not is probably done like a negative number
+
+    aaa...
 
 
 
