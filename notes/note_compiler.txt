@@ -1,10 +1,23 @@
 Compiler design notes
 
-most of this is really badly put together. surprised it works so far.
-probably either need to fix or redesign later because a lot of shared data structures,
-and other weird code bs to make it work which is probably bad.
+the compiler is rewritten and doesnt use the stringstream anymore.
+now instead there is a vector<string> milvec for the generated code.
+each rule builds a string and then when done string is push_back to milvec.
+the branches/loops basically have a special part where when a bool is encountered it sets a flag.
+then while the bool flag is set code form statements goes to another vector of strings brstmts.
+when all of the statements in that arm of the branch are added it returns to the if rule.
+in the if rule the vector is output between the correct labels
+
+this needs to be re-factored and cleaned up, probably a lot of subtly broken code...
 
 #----------------------------------------
+
+SUCCESSFUL FILE COMPILATION
+
+fibonacci.min
+
+#----------------------------------------
+
 
 COMPLETED TASKS
 anything with a "*" is not 100% complete, see section on broken stuff (arrays)
@@ -92,17 +105,16 @@ TASK DESCRIPTIONS
         y
     : l_end
 
-    trying to do something where has a statementsB for branches...
-
-
 
 
 * booleans, comparisons (NOT STARTED)
     trying to do like the arithmetic examples
     not is probably done like a negative number
 
-    aaa...
-
+    the code output is handled basically just like the expressions are.
+    but there is a flag called bools which is used so code in a branch gets output at the right place.
+    each boolean will set bools to 1 and it gets set back to 0 at the end of a branch/loop.
+    when a statement is about to write code if bools == 1 then it writes to brstmts instead of the milvec.
 
 
 
@@ -116,6 +128,9 @@ TASK DESCRIPTIONS
     declare a temp for the result
     add the temps and store to result
     that result should get set to the assign statement
+
+    the math rules set a flag maths to 1 so the assign rule can know it is using an expression as the right side.
+    in this case it would then use the label of the last temp variable created.
 
     for example an addition assignment
         i := 5 + 3
@@ -208,10 +223,10 @@ TASK DESCRIPTIONS
 
 
 * function layout
-    each rule should write to the string stream then when done goes to function rule
-    in function rule output: "func", ss.str(), and "endfunc"
-    save output to vector of strings where each string is the mil code for a function
-    after output reset ss.str() to "" and clear the stringstream
+    each rule should write milcode strings to the vector milvec then when done goes to function rule
+    in function rule output: "func", code from milvec, and "endfunc"
+    save completed output to vector of strings where each string is the full mil code for a function
+    after output clear the milvec vector
     also save symbol table to vector of maps
 
 #----------------------------------------

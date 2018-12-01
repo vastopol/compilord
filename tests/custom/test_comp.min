@@ -121,7 +121,7 @@ beginbody
         if i <= 2
         then
             write i;
-            i := j;
+            ## i := j;
             ## k := 3 + 4;
         endif;
 
