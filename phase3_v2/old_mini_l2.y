@@ -64,9 +64,6 @@ vector<string> expvec;  // expressions
 int statcnt = 0;        // statement counter for branches/loops
 string prevstat;        // the previous statements so far
 
-string codestr;
-vector<string> milvec;
-
 map<string,string> symtab;
 vector< map<string,string> > symtablst;
 
@@ -158,14 +155,12 @@ function
 
             // write mil code
             funs += "func ";
-            for( auto i : milvec )
+            while(getline(ss,buf))
             {
-                funs += i;
+                funs += buf;
                 funs += "\n";
             }
             funs += "endfunc\n";
-
-            milvec.clear(); // empty code vector
 
             // save mil code function str
             funslst.push_back(funs);
@@ -219,21 +214,11 @@ declaration                          // add identifiers to symbol table here
             for (auto id : idslst)
             {
                 symtab[id] = "0";
-
-                codestr = "";
-                codestr += ". ";
-                codestr += id;
-                milvec.push_back(codestr);
+                ss << ". " << id << "\n";
 
                 if(pcnt == 1) // output the assignment of positional arguments to parameters
                 {
-                    codestr = "";
-                    codestr += "= ";
-                    codestr += id;
-                    codestr += ", $";
-                    codestr += to_string(pnum);
-                    milvec.push_back(codestr);
-
+                    ss << "= " << id << ", $" << pnum << "\n";
                     pnum++;
                 }
             }
@@ -246,13 +231,7 @@ declaration                          // add identifiers to symbol table here
             for (auto id : idslst)
             {
                 symtab[id] = to_string(yylval.ival);
-
-                codestr = "";
-                codestr += ".[] ";
-                codestr += id;
-                codestr += ", ";
-                codestr += to_string(yylval.ival);
-                milvec.push_back(codestr);
+                ss << ".[] " << id << ", " << yylval.ival << "\n";
             }
             idslst.clear();
         }
@@ -262,10 +241,14 @@ identifiers
     : identifier
         {
             //cout << "ident -> IDENT " << *yylval.sval << endl;
+
+            //output("_1_"+*yylval.sval)
         }
     | identifier COMMA identifiers
         {
             //cout << "identifiers -> ident COMMA identifiers" << endl;
+
+            //output("_2_"+*yylval.sval)
         }
     ;
 
@@ -274,7 +257,12 @@ identifier
         {
             //cout << "ident -> IDENT " << *yylval.sval << endl;
 
-            idslst.push_back(*yylval.sval); // capture name to store in symtab map
+            //output("_~_"+*yylval.sval);
+
+            //ss << *yylval.sval << "\n";   // Might comment out because double print of ids for some rules
+
+            // capture name to store in symtab map
+            idslst.push_back(*yylval.sval);
         }
     ;
 
@@ -283,14 +271,13 @@ identifierF
         {
             //cout << "ident -> IDENT " << *yylval.sval << endl;
 
+            //output("_F_"+*yylval.sval);
+
             fid = *yylval.sval; // save function name for the call instruction
 
             if(fcnt == 0) // output for the first line of code func name
             {
-                codestr = "";
-                codestr = *yylval.sval;
-                milvec.push_back(codestr);
-
+                ss << *yylval.sval << "\n";
                 fcnt++;
 
                 pcnt = 1; // set for declarationsP
@@ -317,6 +304,9 @@ statementsB
     | statement SEMICOLON statementsB
         {
             //cout << "statements -> statement SEMICOLON statements" << endl;
+            //output($1);
+            //output(*$1);
+            //outarr(expvec);
 
             statcnt++;
         }
@@ -347,79 +337,66 @@ statement
 
             if(it->second == "0") // scalar
             {
-                codestr = "";
-                codestr += "= ";
-                codestr += rwvarslst.at(0);
-                codestr += ", ";
+                ss << "= " << rwvarslst.at(0) << ", ";
 
                 if(vtag == 0) // was a number
                 {
                     if(maths == 1 || neg == 1) // math expressions
                     {
-                        // int = expr
-                        codestr += expvec.at(expvec.size()-1);
+                        //ss << lasttmp << "\n"; // int = expr
+                        ss << expvec.at(expvec.size()-1) << "\n";
                     }
                     else
                     {
-                        // int = num
-                        codestr += to_string(yylval.ival);
+                        ss << yylval.ival << "\n";  // int = num
                     }
                 }
                 else // need to check yylval.sval is int or arr
                 {
                     if(maths == 1) // math expressions
                     {
-                        codestr += lasttmp;
+                        ss << lasttmp << "\n";
                     }
                     else
                     {
-                        // int = int
-                        codestr += *yylval.sval;
+                        ss << *yylval.sval << "\n";  // int = int
                     }
 
-                    // fixme: int = arr
+                    // int = arr
+                    // fixme
                 }
             }
             else // array
             {
-                codestr = "";
-                codestr += "[]= ";
-                codestr += rwvarslst.at(0);
-                codestr += ", ";
-                codestr += varidxlst.at(0);
-                codestr += ", ";
+                ss << "[]= " << rwvarslst.at(0) << ", " << varidxlst.at(0) << ", ";
 
                 if(vtag == 0) // was a number
                 {
                     if(maths == 1 || neg == 1) // math expressions
                     {
-                        // arr = expr
-                        codestr += lasttmp;
+                        ss << lasttmp << "\n"; // arr = expr
                     }
                     else
                     {
-                        // arr = num
-                        codestr += to_string(yylval.ival);
+                        ss << yylval.ival << "\n";  // arr = num
                     }
                 }
                 else // need to check yylval.sval is int or arr
                 {
                     if(maths == 1) // math expressions
                     {
-                        codestr += lasttmp;
+                        ss << lasttmp << "\n";
                     }
                     else
                     {
-                        // arr = int
-                        codestr += *yylval.sval;
+                        ss << *yylval.sval << "\n";  // arr = int
                     }
 
-                    // fixme: arr = arr
+                    // arr = arr
+                    // fixme
                 }
                 varidxlst.erase(varidxlst.begin());
             }
-
-            milvec.push_back(codestr); // save the assign code
 
             maths = 0;         // done
             neg = 0;
@@ -435,36 +412,16 @@ statement
             string lbl_true = lblmkr();
             string lbl_end = lblmkr();
 
-            codestr = "";
-            codestr += "?:= ";
-            codestr += lbl_true;
-            codestr += ", ";
-            codestr += lasttmp;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += ": ";
-            codestr += lbl_false;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += ":= ";
-            codestr += lbl_end;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += ": ";
-            codestr += lbl_true;
-            milvec.push_back(codestr);
-
+            ss << "?:= " << lbl_true << ", " << lasttmp << "\n";
+            ss << ": " << lbl_false << "\n";
+            ss << ":= " << lbl_end << "\n";
+            ss << ": " << lbl_true << "\n";
 
                 //ss << /* statements */ << "\n";
+
                 output(statcnt);
 
-            codestr = "";
-            codestr += ": ";
-            codestr += lbl_end;
-            milvec.push_back(codestr);
+            ss << ": " << lbl_end << "\n";
         }
     | IF bool-expr THEN statements ELSE statements ENDIF
         {
@@ -474,38 +431,17 @@ statement
             string lbl_true = lblmkr();
             string lbl_end = lblmkr();
 
-            codestr = "";
-            codestr += "?:= ";
-            codestr += lbl_true;
-            codestr += ", ";
-            codestr += lasttmp;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += ": ";
-            codestr += lbl_false;
-            milvec.push_back(codestr);
+            ss << "?:= " << lbl_true << ", " << lasttmp << "\n";
+            ss << ": " << lbl_false << "\n";
 
                 //ss << /* statements */ << "\n";
-                output(statcnt);
 
-            codestr = "";
-            codestr += ":= ";
-            codestr += lbl_end;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += ": ";
-            codestr += lbl_true;
-            milvec.push_back(codestr);
+            ss << ":= " << lbl_end << "\n";
+            ss << ": " << lbl_true << "\n";
 
                 //ss << /* statements */ << "\n";
-                output(statcnt);
 
-            codestr = "";
-            codestr += ": ";
-            codestr += lbl_end;
-            milvec.push_back(codestr);
+            ss << ": " << lbl_end << "\n";
         }
     | WHILE bool-expr BEGINLOOP statements ENDLOOP
         {
@@ -526,21 +462,13 @@ statement
                 if(it == symtab.end()){ yyerror("read error with id"); }
                 if(it->second == "0")
                 {
-                    codestr = "";
-                    codestr += ".< ";
-                    codestr += v;
+                    ss << ".< " << v << "\n";
                 }
                 else
                 {
-                    codestr = "";
-                    codestr += ".[]< ";
-                    codestr += v;
-                    codestr += ", ";
-                    codestr += varidxlst.at(0);
-
+                    ss << ".[]< " << v << ", " << varidxlst.at(0) << "\n";
                     varidxlst.erase(varidxlst.begin());
                 }
-                milvec.push_back(codestr);
             }
             rwvarslst.clear();
         }
@@ -555,21 +483,13 @@ statement
                 if(it == symtab.end()){ yyerror("write error with id"); }
                 if(it->second == "0")
                 {
-                    codestr = "";
-                    codestr += ".> ";
-                    codestr += v;
+                    ss << ".> " << v << "\n";
                 }
                 else
                 {
-                    codestr = "";
-                    codestr += ".[]> ";
-                    codestr += v;
-                    codestr += ", ";
-                    codestr += varidxlst.at(0);
-
+                    ss << ".[]> " << v << ", " << varidxlst.at(0) << "\n";
                     varidxlst.erase(varidxlst.begin());
                 }
-                milvec.push_back(codestr);
             }
             rwvarslst.clear();
         }
@@ -581,24 +501,14 @@ statement
         {
             //cout << "statement -> RETURN expression" << endl;
 
+            //output(yylval.ival); // might be return value?
+            //outarr(expvec);
+
             string retval = tmpmkr(); // result?
+            ss << ". " << retval << "\n";
+            ss << "= " << retval << ", " << expvec.at(expvec.size()-1) << "\n";
 
-            codestr = "";
-            codestr += ". ";
-            codestr += retval;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "= ";
-            codestr += retval;
-            codestr += ", ";
-            codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "ret ";
-            codestr += retval;
-            milvec.push_back(codestr);
+            ss << "ret " << retval << "\n";
         }
     ;
 
@@ -673,58 +583,30 @@ bool-expr
         {
             //cout << "comp -> LTE" << endl;
 
+            //ss << "<=" << "\n";
+
+            //outarr(expvec);
+
             maths = 1;
 
-            string rhs = tmpmkr(); // right side
-            string lhs = tmpmkr(); // left side
+            string rhs = tmpmkr(); // result
+            ss << ". " << rhs << "\n";
+            ss << "= " << rhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string lhs = tmpmkr(); // result
+            ss << ". " << lhs << "\n";
+            ss << "= " << lhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
             string res = tmpmkr(); // result
-
-            // right
-            codestr = "";
-            codestr += ". ";
-            codestr += rhs;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "= ";
-            codestr += rhs;
-            codestr += ", ";
-            codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
-
-            expvec.pop_back();
-
-            // left
-            codestr = "";
-            codestr += ". ";
-            codestr += lhs;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "= ";
-            codestr += lhs;
-            codestr += ", ";
-            codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
-
-            expvec.pop_back();
-
-            // result
-            codestr = "";
-            codestr += ". ";
-            codestr += res;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "<= "; // lte
-            codestr += res;
-            codestr += ", ";
-            codestr += lhs;
-            codestr += ", ";
-            codestr += rhs;
-            milvec.push_back(codestr);
+            ss << ". " << res << "\n";
+            ss << "<= " << res << ", " << lhs << ", " << rhs << "\n";
 
             expvec.push_back(res);
+
+            //outarr(expvec);
+
         }
     ;
 
@@ -752,289 +634,131 @@ expression
         {
             //cout << "multiplicative_expression -> term MULT term" << endl;
 
+            //outarr(expvec);
+
             maths = 1;
 
-            string rhs = tmpmkr(); // right side
-            string lhs = tmpmkr(); // left side
+            string rhs = tmpmkr(); // result
+            ss << ". " << rhs << "\n";
+            ss << "= " << rhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string lhs = tmpmkr(); // result
+            ss << ". " << lhs << "\n";
+            ss << "= " << lhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
             string res = tmpmkr(); // result
-
-            // right
-            codestr = "";
-            codestr += ". ";
-            codestr += rhs;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "= ";
-            codestr += rhs;
-            codestr += ", ";
-            codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
-
-            expvec.pop_back();
-
-            // left
-            codestr = "";
-            codestr += ". ";
-            codestr += lhs;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "= ";
-            codestr += lhs;
-            codestr += ", ";
-            codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
-
-            expvec.pop_back();
-
-            // result
-            codestr = "";
-            codestr += ". ";
-            codestr += res;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "* "; // mult
-            codestr += res;
-            codestr += ", ";
-            codestr += lhs;
-            codestr += ", ";
-            codestr += rhs;
-            milvec.push_back(codestr);
+            ss << ". " << res << "\n";
+            ss << "* " << res << ", " << lhs << ", " << rhs << "\n";
 
             expvec.push_back(res);
+
+            //outarr(expvec);
         }
     | term DIV expression
         {
             //cout << "multiplicative_expression -> term DIV term" << endl;
 
+            //outarr(expvec);
+
             maths = 1;
 
-            string rhs = tmpmkr(); // right side
-            string lhs = tmpmkr(); // left side
+            string rhs = tmpmkr(); // result
+            ss << ". " << rhs << "\n";
+            ss << "= " << rhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string lhs = tmpmkr(); // result
+            ss << ". " << lhs << "\n";
+            ss << "= " << lhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
             string res = tmpmkr(); // result
-
-            // right
-            codestr = "";
-            codestr += ". ";
-            codestr += rhs;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "= ";
-            codestr += rhs;
-            codestr += ", ";
-            codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
-
-            expvec.pop_back();
-
-            // left
-            codestr = "";
-            codestr += ". ";
-            codestr += lhs;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "= ";
-            codestr += lhs;
-            codestr += ", ";
-            codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
-
-            expvec.pop_back();
-
             ss << ". " << res << "\n";
-            ss << "<= " << res << ", " << lhs << ", " << rhs << "\n";
-
-            // result
-            codestr = "";
-            codestr += ". ";
-            codestr += res;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "/ "; // div
-            codestr += res;
-            codestr += ", ";
-            codestr += lhs;
-            codestr += ", ";
-            codestr += rhs;
-            milvec.push_back(codestr);
+            ss << "/ " << res << ", " << lhs << ", " << rhs << "\n";
 
             expvec.push_back(res);
+
+            //outarr(expvec);
         }
     | term MOD expression
         {
             //cout << "multiplicative_expression -> term MOD term" << endl;
 
+            //outarr(expvec);
+
             maths = 1;
 
-            string rhs = tmpmkr(); // right side
-            string lhs = tmpmkr(); // left side
+            string rhs = tmpmkr(); // result
+            ss << ". " << rhs << "\n";
+            ss << "= " << rhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string lhs = tmpmkr(); // result
+            ss << ". " << lhs << "\n";
+            ss << "= " << lhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
             string res = tmpmkr(); // result
-
-            // right
-            codestr = "";
-            codestr += ". ";
-            codestr += rhs;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "= ";
-            codestr += rhs;
-            codestr += ", ";
-            codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
-
-            expvec.pop_back();
-
-            // left
-            codestr = "";
-            codestr += ". ";
-            codestr += lhs;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "= ";
-            codestr += lhs;
-            codestr += ", ";
-            codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
-
-            expvec.pop_back();
-
-            // result
-            codestr = "";
-            codestr += ". ";
-            codestr += res;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "% "; // mod
-            codestr += res;
-            codestr += ", ";
-            codestr += lhs;
-            codestr += ", ";
-            codestr += rhs;
-            milvec.push_back(codestr);
+            ss << ". " << res << "\n";
+            ss << "% " << res << ", " << lhs << ", " << rhs << "\n";
 
             expvec.push_back(res);
+
+            //outarr(expvec);
         }
     | term ADD expression
         {
             //cout << "expression -> multiplicative_expression ADD multiplicative_expression" << endl;
 
+            //outarr(expvec);
+
             maths = 1;
 
-            string rhs = tmpmkr(); // right side
-            string lhs = tmpmkr(); // left side
+            string rhs = tmpmkr(); // result
+            ss << ". " << rhs << "\n";
+            ss << "= " << rhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string lhs = tmpmkr(); // result
+            ss << ". " << lhs << "\n";
+            ss << "= " << lhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
             string res = tmpmkr(); // result
-
-            // right
-            codestr = "";
-            codestr += ". ";
-            codestr += rhs;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "= ";
-            codestr += rhs;
-            codestr += ", ";
-            codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
-
-            expvec.pop_back();
-
-            // left
-            codestr = "";
-            codestr += ". ";
-            codestr += lhs;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "= ";
-            codestr += lhs;
-            codestr += ", ";
-            codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
-
-            expvec.pop_back();
-
-            // result
-            codestr = "";
-            codestr += ". ";
-            codestr += res;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "+ "; // add
-            codestr += res;
-            codestr += ", ";
-            codestr += lhs;
-            codestr += ", ";
-            codestr += rhs;
-            milvec.push_back(codestr);
+            ss << ". " << res << "\n";
+            ss << "+ " << res << ", " << lhs << ", " << rhs << "\n";
 
             expvec.push_back(res);
+
+            //outarr(expvec);
         }
     | term SUB expression
         {
             //cout << "expression -> multiplicative_expression SUB multiplicative_expression" << endl;
 
+            //outarr(expvec);
+
             maths = 1;
 
-            string rhs = tmpmkr(); // right side
-            string lhs = tmpmkr(); // left side
+            string rhs = tmpmkr(); // result
+            ss << ". " << rhs << "\n";
+            ss << "= " << rhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
+            string lhs = tmpmkr(); // result
+            ss << ". " << lhs << "\n";
+            ss << "= " << lhs << ", " << expvec.at(expvec.size()-1) << "\n";
+            expvec.pop_back();
+
             string res = tmpmkr(); // result
-
-            // right
-            codestr = "";
-            codestr += ". ";
-            codestr += rhs;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "= ";
-            codestr += rhs;
-            codestr += ", ";
-            codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
-
-            expvec.pop_back();
-
-            // left
-            codestr = "";
-            codestr += ". ";
-            codestr += lhs;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "= ";
-            codestr += lhs;
-            codestr += ", ";
-            codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
-
-            expvec.pop_back();
-
-            // result
-            codestr = "";
-            codestr += ". ";
-            codestr += res;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "- "; // sub
-            codestr += res;
-            codestr += ", ";
-            codestr += lhs;
-            codestr += ", ";
-            codestr += rhs;
-            milvec.push_back(codestr);
+            ss << ". " << res << "\n";
+            ss << "- " << res << ", " << lhs << ", " << rhs << "\n";
 
             expvec.push_back(res);
+
+            //outarr(expvec);
         }
     ;
 
@@ -1043,11 +767,15 @@ term
         {
             //cout << "term -> var" << endl;
 
+            //rwvarslst.clear(); // comment out so assign works
+
             vtag = 1; // for assign src is ident
         }
     | NUMBER
         {
             //cout << "term -> NUMBER" << " " << yylval.ival << endl;
+
+            //ss << yylval.ival << "\n";  // probably comment out eventually
 
             vtag = 0; // for the assign src is num
 
@@ -1061,27 +789,19 @@ term
         {
             //cout << "term -> identifiers L_PAREN expressions R_PAREN" << endl;
 
-            string t_dst = tmpmkr();    // temp variable for the destination of call func
 
-            codestr = "";
-            codestr += "param ";
-            codestr += expvec.at(expvec.size()-1); // can only do 1 param currently, probably need counter and loop
-            milvec.push_back(codestr);
+            // output params probably in a loop
+            //output(lasttmp);
+            //outarr(expvec); out("\n");
 
+            ss << "param ";
+            ss << expvec.at(expvec.size()-1); // can only do 1 param currently
+            ss << "\n";
             expvec.pop_back();
 
-            codestr = "";
-            codestr += ". ";
-            codestr += t_dst;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "call ";
-            codestr += fid;
-            codestr += ", ";
-            codestr += t_dst;
-            milvec.push_back(codestr);
-
+            string t_dst = tmpmkr();    // output a temp variable for the destination && call func
+            ss << ". " << t_dst << "\n";
+            ss << "call " << fid << ", " << t_dst << "\n";
             expvec.push_back(t_dst);
         }
     | SUB var
@@ -1092,23 +812,16 @@ term
         {
             //cout << "term -> SUB NUMBER" << " " << yylval.ival << endl;
 
-            vtag = 0; // for the assign the src is number
+            // ss << (-1 * yylval.ival) << "\n";  // not sure...
 
-            neg = 1; //  for assign to know if negative number
+            vtag = 0; // for the assign src is num
+
+            neg = 1; // for assign to know if neg
 
             string neg_s = tmpmkr();
 
-            codestr = "";
-            codestr += ". ";
-            codestr += neg_s;
-            milvec.push_back(codestr);
-
-            codestr = "";
-            codestr += "- ";
-            codestr += neg_s;
-            codestr += ", 0, ";
-            codestr += to_string(yylval.ival);
-            milvec.push_back(codestr);
+            ss << ". " << neg_s << "\n";
+            ss << "- " << neg_s << ", 0, " << yylval.ival << "\n";
 
             expvec.push_back(neg_s);
         }
@@ -1126,10 +839,14 @@ vars
     : var
         {
             //cout << "vars -> var" << endl;
+
+            //output(*yylval.sval);
         }
     | var COMMA vars
         {
             //cout << "vars -> var COMMA vars" << endl;
+
+            //output(*yylval.sval);
         }
     ;
 
@@ -1148,18 +865,18 @@ var
         {
             //cout << "var -> ident L_SQUARE_BRACKET expression R_SQUARE_BRACKET" << endl;
 
-            string a_id = idslst.at(idslst.size()-1); // array id name
+            //output(idslst.at(idslst.size()-1)); // name
+            //if(yylval.sval){output(*yylval.sval);}else{output(yylval.ival);} // index
+
+            string a_id = idslst.at(idslst.size()-1);
             rwvarslst.push_back(a_id);
 
-            // array index
-            if(vtag == 1)
+            if(vtag == 1) // id
             {
-                // id
                 varidxlst.push_back(*yylval.sval);
             }
-            else
+            else // number
             {
-                // number
                 varidxlst.push_back(to_string(yylval.ival));
             }
         }

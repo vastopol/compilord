@@ -111,14 +111,20 @@ beginbody
     ## PASS: none
     ## FAIL: all
         i := 1; j := 1; k := 2;
-
-        ## if true then write i; endif;
+        ## if true  then write i; endif;
         ## if false then write i; endif;
-        ## if not true then write i; endif;
+        ## if not true  then write i; endif;
         ## if not false then write i; endif;
+        ## if i <= j then write i; endif;
+        ## if i <= j then write i; else write j endif;
 
-        if i <= j then write i; endif;
+        if i <= 2
+        then
+            write i;
+            i := j;
+            ## k := 3 + 4;
+        endif;
 
-        ## if i >= j then write i; else write j endif;
 
 endbody
+
