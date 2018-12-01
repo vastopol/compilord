@@ -42,12 +42,12 @@ string lastlbl;           // name of last label created
 string lasttmp;           // name of last temp variable created
 string lastbool;          // name of last boolean expression temp variable
 
-int vtag;                 // in assign flag for choosing: 0 =  num, 1 = str
-int neg;                  // in assign flag to tell if negative number
+int vtag = -1;            // in assign flag for choosing: 0 =  num, 1 = str
+int neg = 0;              // in assign flag to tell if negative number
 vector<string> rwvarslst; // var names in read,write,assign
 vector<string> varidxlst; // array index
 
-int fcnt = 0;             // function counter for string stream
+int fcnt = 0;             // function flag
 string fid;               // function name for call
 
 int pcnt = 0;             // param flag for function declarations
@@ -168,8 +168,6 @@ function
             }
             funs += "endfunc\n";
 
-            milvec.clear(); // empty code vector
-
             // save mil code function str
             funslst.push_back(funs);
 
@@ -179,11 +177,17 @@ function
             // clear
             vtag = -1;
             fcnt = 0;
+            bools = 0;
+            maths = 0;
+            pcnt = 0;
+            pnum = 0;
             funs = "";
-            //ss.str("");
-            //ss.clear();
             idslst.clear();
             rwvarslst.clear();
+            varidxlst.clear();
+            expvec.clear();
+            milvec.clear();
+            brstmts.clear();
             symtab.clear();
         }
     ;
@@ -408,7 +412,14 @@ statement
                 varidxlst.erase(varidxlst.begin());
             }
 
-            milvec.push_back(codestr); // save the assign code
+            if(bools == 1)
+            {
+                brstmts.push_back(codestr);
+            }
+            else
+            {
+                milvec.push_back(codestr);
+            }
 
             maths = 0;         // done
             neg = 0;
@@ -480,7 +491,12 @@ statement
             codestr += lbl_false;
             milvec.push_back(codestr);
 
-                // FALSE statements
+            // FALSE statements
+            for( auto i : brstmts )
+            {
+                milvec.push_back(i);
+            }
+            brstmts.clear();
 
             codestr = "";
             codestr += ":= ";
@@ -492,8 +508,13 @@ statement
             codestr += lbl_true;
             milvec.push_back(codestr);
 
-                // TRUE statements
-                
+            // TRUE statements
+            for( auto i : brstmts )
+            {
+                milvec.push_back(i);
+            }
+            brstmts.clear();
+
             codestr = "";
             codestr += ": ";
             codestr += lbl_end;
@@ -540,6 +561,10 @@ statement
         {
             //cout << "statement -> WRITE vars" << endl;
 
+            /*outarr(rwvarslst);
+            output("");
+            outarr(expvec);*/
+
             map<string,string>::iterator it;
             for(auto v : rwvarslst)
             {
@@ -561,7 +586,14 @@ statement
 
                     varidxlst.erase(varidxlst.begin());
                 }
-                milvec.push_back(codestr);
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
             }
             rwvarslst.clear();
         }
@@ -623,6 +655,8 @@ bool-expr
         {
             //cout << "relation_exp -> TRUE" << endl;
 
+            bools = 1;
+
             vtag = 0; // for the assign src is num
 
             expvec.push_back(to_string(1));
@@ -631,6 +665,8 @@ bool-expr
         {
             //cout << "relation_exp -> FALSE" << endl;
 
+            bools = 1;
+
             vtag = 0; // for the assign src is num
 
             expvec.push_back(to_string(0));
@@ -638,52 +674,427 @@ bool-expr
     | L_PAREN bool-expr R_PAREN
         {
             //cout << "relation_exp -> L_PAREN bool-exp R_PAREN" << endl;
+
+            bools = 1;
         }
     | NOT bool-expr
         {
             //cout << "relation_exp -> NOT expression comp expression" << endl;
+
+            bools = 1;
         }
     | bool-expr AND bool-expr
         {
             //cout << "relation_and_exp -> relation_exp AND relation_exp" << endl;
 
-            ss << "&&" << "\n";
+            bools = 1;
+
+            string rhs = tmpmkr(); // right side
+            string lhs = tmpmkr(); // left side
+            string res = tmpmkr(); // result
+
+            lastbool = res;  // save name of last bool for branch/loop
+
+            // right
+            codestr = "";
+            codestr += ". ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += rhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // left
+            codestr = "";
+            codestr += ". ";
+            codestr += lhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // result
+            codestr = "";
+            codestr += ". ";
+            codestr += res;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "&& "; // and
+            codestr += res;
+            codestr += ", ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            expvec.push_back(res);
         }
     | bool-expr OR bool-expr
         {
             //cout << "bool_exp -> relation_and_exp OR relation_and_exp" << endl;
 
-            ss << "||" << "\n";
+            bools = 1;
+
+            string rhs = tmpmkr(); // right side
+            string lhs = tmpmkr(); // left side
+            string res = tmpmkr(); // result
+
+            lastbool = res;  // save name of last bool for branch/loop
+
+            // right
+            codestr = "";
+            codestr += ". ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += rhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // left
+            codestr = "";
+            codestr += ". ";
+            codestr += lhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // result
+            codestr = "";
+            codestr += ". ";
+            codestr += res;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "|| "; // or
+            codestr += res;
+            codestr += ", ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            expvec.push_back(res);
         }
     | expression EQ expression
         {
             //cout << "comp -> EQ" << endl;
 
-            ss << "==" << "\n";
+            bools = 1;
+
+            string rhs = tmpmkr(); // right side
+            string lhs = tmpmkr(); // left side
+            string res = tmpmkr(); // result
+
+            lastbool = res;  // save name of last bool for branch/loop
+
+            // right
+            codestr = "";
+            codestr += ". ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += rhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // left
+            codestr = "";
+            codestr += ". ";
+            codestr += lhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // result
+            codestr = "";
+            codestr += ". ";
+            codestr += res;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "== "; // eq
+            codestr += res;
+            codestr += ", ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            expvec.push_back(res);
         }
     | expression NEQ expression
         {
             //cout << "comp -> NEQ" << endl;
 
-            ss << "!=" << "\n";
+            bools = 1;
+
+            string rhs = tmpmkr(); // right side
+            string lhs = tmpmkr(); // left side
+            string res = tmpmkr(); // result
+
+            lastbool = res;  // save name of last bool for branch/loop
+
+            // right
+            codestr = "";
+            codestr += ". ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += rhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // left
+            codestr = "";
+            codestr += ". ";
+            codestr += lhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // result
+            codestr = "";
+            codestr += ". ";
+            codestr += res;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "!= "; // neq
+            codestr += res;
+            codestr += ", ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            expvec.push_back(res);
         }
     | expression GT expression
         {
             //cout << "comp -> GT" << endl;
 
-            ss << ">" << "\n";
+            bools = 1;
+
+            string rhs = tmpmkr(); // right side
+            string lhs = tmpmkr(); // left side
+            string res = tmpmkr(); // result
+
+            lastbool = res;  // save name of last bool for branch/loop
+
+            // right
+            codestr = "";
+            codestr += ". ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += rhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // left
+            codestr = "";
+            codestr += ". ";
+            codestr += lhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // result
+            codestr = "";
+            codestr += ". ";
+            codestr += res;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "> "; // gt
+            codestr += res;
+            codestr += ", ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            expvec.push_back(res);
         }
     | expression LT expression
         {
             //cout << "comp -> LT" << endl;
 
-            ss << "<" << "\n";
+            bools = 1;
+
+            string rhs = tmpmkr(); // right side
+            string lhs = tmpmkr(); // left side
+            string res = tmpmkr(); // result
+
+            lastbool = res;  // save name of last bool for branch/loop
+
+            // right
+            codestr = "";
+            codestr += ". ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += rhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // left
+            codestr = "";
+            codestr += ". ";
+            codestr += lhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // result
+            codestr = "";
+            codestr += ". ";
+            codestr += res;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "< "; // lt
+            codestr += res;
+            codestr += ", ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            expvec.push_back(res);
         }
     | expression GTE expression
         {
             //cout << "comp -> GTE" << endl;
 
-            ss << ">=" << "\n";
+            bools = 1;
+
+            string rhs = tmpmkr(); // right side
+            string lhs = tmpmkr(); // left side
+            string res = tmpmkr(); // result
+
+            lastbool = res;  // save name of last bool for branch/loop
+
+            // right
+            codestr = "";
+            codestr += ". ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += rhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // left
+            codestr = "";
+            codestr += ". ";
+            codestr += lhs;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += "= ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += expvec.at(expvec.size()-1);
+            milvec.push_back(codestr);
+
+            expvec.pop_back();
+
+            // result
+            codestr = "";
+            codestr += ". ";
+            codestr += res;
+            milvec.push_back(codestr);
+
+            codestr = "";
+            codestr += ">= "; // gte
+            codestr += res;
+            codestr += ", ";
+            codestr += lhs;
+            codestr += ", ";
+            codestr += rhs;
+            milvec.push_back(codestr);
+
+            expvec.push_back(res);
         }
     | expression LTE expression
         {
@@ -780,14 +1191,30 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += rhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "= ";
             codestr += rhs;
             codestr += ", ";
             codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.pop_back();
 
@@ -795,14 +1222,30 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += lhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "= ";
             codestr += lhs;
             codestr += ", ";
             codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.pop_back();
 
@@ -810,7 +1253,15 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += res;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "* "; // mult
@@ -819,7 +1270,15 @@ expression
             codestr += lhs;
             codestr += ", ";
             codestr += rhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.push_back(res);
         }
@@ -837,14 +1296,30 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += rhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "= ";
             codestr += rhs;
             codestr += ", ";
             codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.pop_back();
 
@@ -852,14 +1327,30 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += lhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "= ";
             codestr += lhs;
             codestr += ", ";
             codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.pop_back();
 
@@ -870,7 +1361,15 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += res;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "/ "; // div
@@ -879,7 +1378,15 @@ expression
             codestr += lhs;
             codestr += ", ";
             codestr += rhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.push_back(res);
         }
@@ -897,14 +1404,30 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += rhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "= ";
             codestr += rhs;
             codestr += ", ";
             codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.pop_back();
 
@@ -912,14 +1435,30 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += lhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "= ";
             codestr += lhs;
             codestr += ", ";
             codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.pop_back();
 
@@ -927,7 +1466,15 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += res;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "% "; // mod
@@ -936,7 +1483,15 @@ expression
             codestr += lhs;
             codestr += ", ";
             codestr += rhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.push_back(res);
         }
@@ -954,14 +1509,30 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += rhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "= ";
             codestr += rhs;
             codestr += ", ";
             codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.pop_back();
 
@@ -969,14 +1540,30 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += lhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "= ";
             codestr += lhs;
             codestr += ", ";
             codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.pop_back();
 
@@ -984,7 +1571,15 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += res;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "+ "; // add
@@ -993,7 +1588,15 @@ expression
             codestr += lhs;
             codestr += ", ";
             codestr += rhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.push_back(res);
         }
@@ -1011,14 +1614,30 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += rhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "= ";
             codestr += rhs;
             codestr += ", ";
             codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.pop_back();
 
@@ -1026,14 +1645,30 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += lhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "= ";
             codestr += lhs;
             codestr += ", ";
             codestr += expvec.at(expvec.size()-1);
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.pop_back();
 
@@ -1041,7 +1676,15 @@ expression
             codestr = "";
             codestr += ". ";
             codestr += res;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             codestr = "";
             codestr += "- "; // sub
@@ -1050,7 +1693,15 @@ expression
             codestr += lhs;
             codestr += ", ";
             codestr += rhs;
-            milvec.push_back(codestr);
+
+                if(bools == 1)
+                {
+                    brstmts.push_back(codestr);
+                }
+                else
+                {
+                    milvec.push_back(codestr);
+                }
 
             expvec.push_back(res);
         }

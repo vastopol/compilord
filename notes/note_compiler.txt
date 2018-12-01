@@ -9,6 +9,8 @@ when all of the statements in that arm of the branch are added it returns to the
 in the if rule the vector is output between the correct labels
 
 this needs to be re-factored and cleaned up, probably a lot of subtly broken code...
+the code increased so much that it is too big now...
+realistically probably should try either fixing my older version with string streams or try and adapt tpaynes version
 
 #----------------------------------------
 
@@ -47,9 +49,17 @@ ASSIGN
     // assign array index to integer
     // assign array index to array index
 ARITHMETIC
-    add, sub, mul, div, mod
+    (add, sub, mul, div, mod)
     works for most expression combinations including parenthesis
 BOOLEANS
+    (true, false, not, and, or, lt, lte, gt, gte, eq, neq)
+    works for most comparisons
+    havent done the logic part
+BRANCHES
+    if, if/else
+    works only for simple if, cant handle else
+    can get non nested if statements to work for some
+LOOPS
     // ...
 
 #----------------------------------------
@@ -58,11 +68,8 @@ TO DO/BROKEN
 
 * broken stuff (FIXME)
 
-    --> array index subscripting
-        the index has to be a number not variable or expression
-        either parses wrong outputs incorrect or usually crashes
-            read a[i-1];
-            a[j+1]; := i;
+    need to decouple the read/write/assign it causes the double print and probably other errors too.
+    might make another rule for varA where its for assigns and have separate vectors asnidxlst and asnvarlst
 
     --> read/write
         if use an array with non number index then makes incorrect code
@@ -70,6 +77,12 @@ TO DO/BROKEN
         but actually this produces 2 scalar reads of the index variable
             .< i
             .< i
+
+    --> array index subscripting
+        the index has to be a number not variable or expression
+        either parses wrong outputs incorrect or usually crashes
+            read a[i-1];
+            a[j+1]; := i;
 
     --> array index on rhs of expression
             i := a[0] + 1; write i;
@@ -80,7 +93,7 @@ TO DO/BROKEN
 
 TASK DESCRIPTIONS
 
-* function calls and passing parameters (NOT STARTED)
+* function calls and passing parameters (fixme)
     in the call instruction need to do parameters part maybe make a temp var for each parameter?
 
     can output one parameter as the last entry in expvec
@@ -88,7 +101,7 @@ TASK DESCRIPTIONS
     now just need to figure out how to do multiple parameters
 
 
-* branch, loops, jump, label (NOT STARTED)
+* branch, loops, jump, label (fixme)
     have not figured out to do labels or jumping with branches and loops
     also need the bool stuff to work first since branches use comparisons to jump to a label,
     and loops would get implemented as blocks of code with a compare and jump.
@@ -105,9 +118,17 @@ TASK DESCRIPTIONS
         y
     : l_end
 
+    currently the flag bools controls whether things are written to brstmts or milvec in rules
+    then brstmts is written out to milvec inside of the branch/loop
+
+    for branches/loops with nesting could have another variable as a nested counter.
+    the counter would start at -1. when in a branch/loop increment the counter.
+    other rules would have to check if nested flag is >= 1.
+    if a branch/loop isnt nested it has 0 so things should work normally.
 
 
-* booleans, comparisons (NOT STARTED)
+
+* booleans, comparisons (fixme)
     trying to do like the arithmetic examples
     not is probably done like a negative number
 
@@ -238,14 +259,22 @@ vector<string> expvec
     pushed to in number, sub number, and var
 
 int neg
+    flag
     set to 1 in in "term sub number"
     set to 0 after assign
 
 int maths
+    flag
     set to 1 in the expression
     set to 0 after assign
 
+int bools
+    flag
+    set to 1 in bool-expr
+    set to 0 in branch/loop
+
 int pcnt
+    flag
     used to tell if declaring parameter, so can output the position arguments
     set to 1 in identiferF
     set to 0 at the end of declarationsP
