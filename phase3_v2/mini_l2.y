@@ -509,10 +509,9 @@ Stmt
         }
     | DO BEGINLOOP StmtList ENDLOOP WHILE BoolExp // outline
         {
-            rules << "Stmt -> DO BEGINLOOP StmtList ENDLOOP\n";
+            rules << "Stmt -> DO BEGINLOOP StmtList ENDLOOP WHILE BoolExp\n";
 
-            code << "WHILE BoolExp\n";
-            code  << ": DO BEGINLOOP \n" ;         // BEGINLOOP:
+            code  << ": BEGINLOOP \n" ;         // BEGINLOOP:
             code << "...\n";                        // StmtList
             code << "?:= " << "BEGINLOOP" << ", " << "BoolExp \n";
             // if BoolExp goto BEGINLOOP
