@@ -109,8 +109,8 @@ beginbody
     ## TEST: boolean expressions with if statements (i,j,k)
     ## PASS: none
     ## FAIL: all
-        i := 0;
-        if true  then write i; endif;
+        ## i := 0;
+        ## if true  then write i; endif;
         ## if false then write i; endif;
         ## if not true  then write i; endif;
         ## if not false then write i; endif;
@@ -129,18 +129,18 @@ beginbody
         ## if i == j then write i; else write j; endif;
         ## if i <> j then write i; else write j; endif;
 
-        ## i := 1; j := 2; k := 3;
+        i := 1; j := 2; k := 3;
 
-        ## if j <= k
-        ## then
-            ## write j;
+        if j <= k
+        then
+            write j;
             ## i := j;
             ## k := 3 + 4;
         ## else
             ## write k;
             ## i := k;
             ## k := 3 * 4;
-        ## endif;
+        endif;
 
 endbody
 

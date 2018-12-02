@@ -25,6 +25,9 @@ extern int curpos;
 void print_funs();
 void print_symtabs();
 
+bool pdec_flag = true;  // parameter declarations, output $0, $1, etc...
+int pnum_cnt = 0;       // count the # of params
+
 string funs;              // used to write out a whole function to a string from milvec
 vector<string> funslst;   // hold all the compiled function strings
 
@@ -149,9 +152,23 @@ ExpList
         }
     ;
 
+beginparams
+    : BEGINPARAMS
+        {
+            pdec_flag = true;
+        }
+      ;
+
+endparams
+    : ENDPARAMS
+        {
+            pdec_flag = false; // set flag to done with params
+        }
+    ;
+
 FunctionDecl
     : FUNCTION ID ';'
-      BEGINPARAMS DeclList  ENDPARAMS
+      beginparams DeclList  endparams
       BEGINLOCALS DeclList  ENDLOCALS
       BEGINBODY   StmtList  ENDBODY
         {
@@ -161,14 +178,22 @@ FunctionDecl
             rules << "   BEGINBODY   StmtList  ENDBODY \n";
                 // for code, must expand lists
 
+            // write mil code
             funs += "func ";
             funs += *$2;
             funs += "\n";
             funs += code.str();
             funs += "endfunc\n";
 
+            // save function
             funslst.push_back(funs);
+
+            // reset variables
+            code.str("");
+            code.clear();
             funs = "";
+            pdec_flag = true;
+            pnum_cnt = 0;
 
         }
     ;
@@ -178,6 +203,11 @@ Decl
         {
             rules << "Decl -> ID ':' INTEGER \n";
             code << ". " << *($1) << "\n";
+            if(pdec_flag == true)
+            {
+                code << "= " << *$1 << ", $" << pnum_cnt << "\n";
+                pnum_cnt++;
+            }
         }
     | ID ':' ARRAY '[' NUMBER ']' OF INTEGER   // A vector var *
         {
@@ -190,6 +220,11 @@ Decl
             rules << "VectorDec. ->  ID ',' VectorDecl \n";
             //code  << ".[] " << *($1) << ", " << vectorSize << "\n"; // Broken: this will declare scalars in a list as arrays
             code << ". " << *$1 << "\n";
+            if(pdec_flag == true)
+            {
+                code << "= " << *$1 << ", $" << pnum_cnt << "\n";
+                pnum_cnt++;
+            }
         }
     ; // vectorSize is global declared at the top of main.cc
 
@@ -362,11 +397,14 @@ Exp
             code << ". " << *$$ << "\n";                        // declare temp
             code << "= " << *$$ << ", " << *$2 << "\n";
         }
-    | ID '(' ExpList ')'      // function call         // ???
+    //| ID '(' ExpList ')'      // function call         // ???
+    | ID '(' Exp ')'
         {
             rules << "Exp -> ID '(' Exp ')' \n";
-            $$ = new string("_T" + to_string(reductionCt++)); // dest
-            // parameters
+
+            // parameters (cant handle more than 1...)
+            code << "param " << *$3 << "\n";
+            $$ = new string("_T" + to_string(reductionCt++));   // dest
             code << ". " << *$$ << "\n";                        // declare temp dest
             code << "call " << *$1 << ", " << *$$ << "\n";      // call func with dest
         }
@@ -429,43 +467,54 @@ Stmt
     | IF BoolExp THEN StmtList ELSE StmtList ENDIF    // outline
         {
             rules << "Stmt -> IF BoolExp THEN StmtList ELSE StmtList ENDIF\n";
-            code << "?:= THEN, BoolExp \n"        // if BoolExp goto THEN
-            << ":= ELSE \n"                  // goto ELSE
-            << ":THEN \n"                    // THEN:
-            << "..."                         // dump StmtList
-            << ":= ENDIF \n"                 // goto ENDIF
-            << ":ELSE \n"                    // ELSE:
-            << "..."                         // StmtList
-            << ":ENDIF \n";                   // ENDIF:
+
+            string* then_lbl = new string("_L" + to_string(reductionCt++));
+            string* else_lbl = new string("_L" + to_string(reductionCt++));
+            string* endif_lbl = new string("_L" + to_string(reductionCt++));
+
+            code << "?:= THEN, BoolExp \n";        // if BoolExp goto THEN
+            code << ":= ELSE \n";                  // goto ELSE
+            code << ": THEN \n";                    // THEN:
+            code << "...\n";                         // dump StmtList
+            code << ":= ENDIF \n";                 // goto ENDIF
+            code << ": ELSE \n";                    // ELSE:
+            code << "...\n";                         // StmtList
+            code << ": ENDIF \n";                   // ENDIF:
         }
     | IF BoolExp THEN StmtList ENDIF                  // outline
         {
             rules << "Stmt -> IF BoolExp THEN StmtList ENDIF\n";
-            code << "?:= THEN, BoolExp \n"        // if BoolExp goto THEN
-            << ":= ELSE \n"                  // goto ELSE
-            << ":THEN \n"                    // THEN:
-            << "..."                         // StmtList
-            << ":ELSE \n";                    // ELSE:
+
+            string* then_lbl = new string("_L" + to_string(reductionCt++));
+            string* else_lbl = new string("_L" + to_string(reductionCt++));
+
+            code << "?:= " << *then_lbl << ", " << *$2 << "\n";        // if BoolExp goto THEN
+            code << ":= " << *else_lbl << "\n";                  // goto ELSE
+            code << ": " << *then_lbl << "\n";                    // THEN:
+            code << "...\n";                         // StmtList
+            code << ": " << *else_lbl << "\n";                    // ELSE:
         }
     | WHILE BoolExp BEGINLOOP StmtList ENDLOOP        // outline
         {
             rules << "Stmt -> WHILE BoolExp BEGINLOOP StmtList ENDLOOP\n";
-            code << ": WHILE \n"                  // WHILE:
-            << "?:= BEGINLOOP, BoolExp \n"
+
+            code << ": WHILE \n";                  // WHILE:
+            code << "?:= BEGINLOOP, BoolExp \n";
             // if boolExp goto BEGINLOOP
-            << ":= EXIT \n"        // otherwise, goto EXIT
-            << ": BEGINLOOP \n"              // BEGINLOOP:
-            << "..."                         // StmtList
-            << ":= WHILE \n"                 // goto WHILE
-            << ": EXIT \n";                   // EXIT:
+            code << ":= EXIT \n";        // otherwise, goto EXIT
+            code << ": BEGINLOOP \n";              // BEGINLOOP:
+            code << "...\n";                         // StmtList
+            code << ":= WHILE \n";                 // goto WHILE
+            code << ": EXIT \n";                   // EXIT:
         }
     | DO BEGINLOOP StmtList ENDLOOP WHILE BoolExp // outline
         {
-            rules << "Stmt -> DO BEGINLOOP StmtList ENDLOOP "
-            << "WHILE BoolExp\n";
-            code  << ": DO BEGINLOOP \n"          // BEGINLOOP:
-            << "..."                        // StmtList
-            << "?:=  << BEGINLOOP <<,  << BoolExp \n";
+            rules << "Stmt -> DO BEGINLOOP StmtList ENDLOOP\n";
+
+            code << "WHILE BoolExp\n";
+            code  << ": DO BEGINLOOP \n" ;         // BEGINLOOP:
+            code << "...\n";                        // StmtList
+            code << "?:= " << "BEGINLOOP" << ", " << "BoolExp \n";
             // if BoolExp goto BEGINLOOP
         }
     | CONTINUE                                // outline
@@ -476,6 +525,10 @@ Stmt
     | RETURN Exp                                        // ???
         {
             rules << "Stmt -> RETURN Exp\n";
+            $$ = new string("_T" + to_string(reductionCt++));
+            code << ". " << *$$ << "\n";                        // declare temp
+            code << "= " << *$$ << ", " << *$2 << "\n";
+            code << "ret " << *$$ << "\n";
         }
     ;
 

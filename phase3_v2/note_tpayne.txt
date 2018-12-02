@@ -1,6 +1,10 @@
 Notes on phase3 version 2 based on t paynes compiler
 
+i think i have fixed some things, but other stuff is broken.
+
 ----------------------------------------
+
+variable declarations: (fixed)
 
 the last part of the "Decl" statement is broken.
 if declare a list of scalars it will set the first scalar as array, but the others are scalars
@@ -27,34 +31,76 @@ code << ". " << *$1 << "\n";
 
 ----------------------------------------
 
-also a problem with the read writes,
-it reads in the value, then it creates a temp variable, but doesnt output the declaration.
-then it assigns to the temp. this causes an error of using an undeclared variable.
+use without declare error: (fixed)
 
-.< i
-= _T0, i
-.> _T0
+in some operations it will
+then it creates a temp variable, but doesnt output the declaration.
+then it uses to the temp. this causes an error of using an undeclared variable.
 
-Use of undeclared variable _T0
+Error: Use of undeclared variable _T0
 
 fix by adding a declaration after each temp is made
 
 $$ = new string("_T" + to_string(reductionCt++));
-code << ". " << *$$ << "\n";                        // declare temp
+code << ". " << *$$ << "\n";                        // add this to declare temp
 
 ----------------------------------------
 
+function parameter declarations: (fixed)
 
 in a function declaration need to declare parameters and then set to the position arguments
+this is done by adding 2 new rules beginparams and endparams which set a bool.
+then in the Decl rule it checks whether the params bool is true
 
-in function calls need to handle parameters
+
+beginparams
+    : BEGINPARAMS
+        {
+            pdec_flag = true;
+        }
+      ;
+
+endparams
+    : ENDPARAMS
+        {
+            pdec_flag = false; // set flag to done with params
+        }
+    ;
+
+inside the Decl rule add a check for the bool, only for scalars (parameters are scalars)
+
+    if(pdec_flag == true)
+    {
+        code << "= " << *$1 << ", $" << pnum_cnt << "\n";
+        pnum_cnt++;
+    }
+
+----------------------------------------
+
+function calls: (broken)
+
+in function calls need to handle passing parameters
+but there is an error with the rule where ExpList causes a syntax error.
+
+ID '(' ExpList ')' // syntax error will not compile...
+
+change to
+
+ID '(' Exp ')'
+
+this works and $3 is the parameter, but now ExpList is useless, also can't do multiple params
+
+----------------------------------------
 
 the last things left are
 
-init parameters in declaration
-function call
-returns
 branches
+    if
+    if/else
+
 loops
+    while
+    do while
+
 continue
 
