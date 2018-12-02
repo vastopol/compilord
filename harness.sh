@@ -5,6 +5,17 @@
 
 #----------------------------------------
 
+# shell variables used by the various functions below.
+
+# FOLDER="phase3"  # my compiler
+FOLDER="phase3_v2" # t payne compiler
+FILES="tests"
+TESTS="tests/custom"
+COMP=$FOLDER"/compiler"
+MILR="tests/mil_run"
+
+#----------------------------------------
+
 # this is the function called at bottom of script
 # comment out subfunctions in main to change script actions
 function main()
@@ -25,7 +36,7 @@ function build_cc()
     echo "Making compiler:"
     echo
 
-    cd phase3
+    cd $FOLDER
     make
     cd ..
 }
@@ -37,10 +48,6 @@ function test_cc()
     echo
     echo "Testing compiler:"
     echo
-
-    TESTS="tests/custom"
-    COMP="phase3/compiler"
-    MILR="tests/mil_run"
 
     $COMP $TESTS/test_comp.min > test_comp.min.mil
 
@@ -58,8 +65,6 @@ function cc_files()
     echo "Compiling files:"
     echo
 
-    FILES="tests"
-    COMP="phase3/compiler"
     for i in $(ls $FILES | grep \.min)
     do
         echo $i".mil"
@@ -75,7 +80,6 @@ function test_files()
     echo "Testing files:"
     echo
 
-    MILR="tests/mil_run"
     for i in $(ls | grep \.min.mil)
     do
         echo $i
@@ -93,7 +97,7 @@ function clean_up()
 
     rm *.min.mil
 
-    cd phase3
+    cd $FOLDER
     make clean
     cd ..
 

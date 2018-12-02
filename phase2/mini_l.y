@@ -35,7 +35,6 @@ void yyerror(string);
 %union{
     int     ival;
     string* sval;
-    /* char*   cval; */ /* for raw char array yytext */
 }
 
 %error-verbose
@@ -54,14 +53,6 @@ void yyerror(string);
 %token IDENT
 
 %token NUMBER
-
-    /*
-
-%token <chval> IDENT
-%token <ival> NUMBER
-%type  <ival> expression
-
-    */
 
 %right ASSIGN
 %left OR
@@ -83,6 +74,7 @@ void yyerror(string);
 %left L_SQUARE_BRACKET
 %left R_PAREN
 %left L_PAREN
+
 
 %%
 
@@ -282,7 +274,6 @@ var
     Rules
     ----------------------------------------
     */
-
 
 
 %%

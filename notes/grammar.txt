@@ -1,8 +1,7 @@
 MINI-L Grammar
 
-This grammar is the model used for the mini-l compiler.
+This grammar is the model used for the phase2 parser for the mini-l compiler.
 This is derived from the syntax diagrams for the language, but slightly changed.
-
 
 --------------------START--------------------
 

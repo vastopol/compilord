@@ -1,6 +1,6 @@
     /*
     ----------------------------------------
-    Lexical Analyzer/Scanner for MINI-L
+    Lexical Analyzer/Scanner for MINI-L (v3)
     Sean Richardson
     ----------------------------------------
     */
@@ -15,9 +15,10 @@
 
 %{
 
-#include <iostream>
+#include "heading.h"
 
-using namespace std;
+/* Bison includes */
+#include "y.tab.h"
 
 int curline = 1;
 int curpos = 1;
@@ -48,12 +49,12 @@ ERR5        {NUMBER}[_]+
     /*----- Reserved Words ----- */
 
 FUNCTION      "function"
-BEGIN_PARAMS  "beginparams"
-END_PARAMS    "endparams"
-BEGIN_LOCALS  "beginlocals"
-END_LOCALS    "endlocals"
-BEGIN_BODY    "beginbody"
-END_BODY      "endbody"
+BEGINPARAMS  "beginparams"
+ENDPARAMS    "endparams"
+BEGINLOCALS  "beginlocals"
+ENDLOCALS    "endlocals"
+BEGINBODY    "beginbody"
+ENDBODY      "endbody"
 INTEGER       "integer"
 ARRAY         "array"
 OF            "of"
@@ -77,8 +78,8 @@ RETURN        "return"
 
     /* ----- Arithmetic Operators ----- */
 
-SUB   "-"
 ADD   "+"
+SUB   "-"
 MULT  "*"
 DIV   "/"
 MOD   "%"
@@ -86,11 +87,11 @@ MOD   "%"
     /* ----- Comparison Operators ----- */
 
 EQ   "=="
-NEQ  "<>"
+NE   "<>"
 LT   "<"
 GT   ">"
-LTE  "<="
-GTE  ">="
+LE  "<="
+GE  ">="
 
     /* ----- Special Symbols ----- */
 
@@ -117,251 +118,269 @@ ASSIGN            ":="
     /*----- Reserved Words ----- */
 
 {FUNCTION} {
-    cout << "FUNCTION" << endl;
     curpos += yyleng;
+    return FUNCTION;
 }
 
-{BEGIN_PARAMS} {
-    cout << "BEGIN_PARAMS" << endl;
+{BEGINPARAMS} {
     curpos += yyleng;
+    return BEGINPARAMS;
 }
 
-{END_PARAMS} {
-    cout << "END_PARAMS" << endl;
+{ENDPARAMS} {
     curpos += yyleng;
+    return ENDPARAMS;
 }
 
-{BEGIN_LOCALS} {
-    cout << "BEGIN_LOCALS" << endl;
+{BEGINLOCALS} {
     curpos += yyleng;
+    return BEGINLOCALS;
 }
 
-{END_LOCALS} {
-    cout << "END_LOCALS" << endl;
+{ENDLOCALS} {
     curpos += yyleng;
+    return ENDLOCALS;
 }
 
-{BEGIN_BODY} {
-    cout << "BEGIN_BODY" << endl;
+{BEGINBODY} {
     curpos += yyleng;
+    return BEGINBODY;
 }
 
-{END_BODY} {
-    cout << "END_BODY" << endl;
+{ENDBODY} {
     curpos += yyleng;
+    return ENDBODY;
 }
 
 {INTEGER} {
-    cout << "INTEGER" << endl;
     curpos += yyleng;
+    return INTEGER;
 }
 
 {ARRAY} {
-    cout << "ARRAY" << endl;
     curpos += yyleng;
+    return ARRAY;
 }
 
 {OF} {
-    cout << "OF" << endl;
     curpos += yyleng;
+    return OF;
 }
 
 {IF} {
-    cout << "IF" << endl;
     curpos += yyleng;
+    return IF;
 }
 
 {THEN} {
-    cout << "THEN" << endl;
     curpos += yyleng;
+    return THEN;
 }
 
 {ENDIF} {
-    cout << "ENDIF" << endl;
     curpos += yyleng;
+    return ENDIF;
 }
 
 {ELSE} {
-    cout << "ELSE" << endl;
     curpos += yyleng;
+    return ELSE;
 }
 
 {WHILE} {
-    cout << "WHILE" << endl;
     curpos += yyleng;
+    return WHILE;
 }
 
 {DO} {
-    cout << "DO" << endl;
     curpos += yyleng;
+    return DO;
 }
 
 {BEGINLOOP} {
-    cout << "BEGINLOOP" << endl;
     curpos += yyleng;
+    return BEGINLOOP;
 }
 
 {ENDLOOP} {
-    cout << "ENDLOOP" << endl;
     curpos += yyleng;
+    return ENDLOOP;
 }
 
 {CONTINUE} {
-    cout << "CONTINUE" << endl;
     curpos += yyleng;
+    return CONTINUE;
 }
 
 {READ} {
-    cout << "READ" << endl;
     curpos += yyleng;
+    return READ;
 }
 
 {WRITE} {
-    cout << "WRITE" << endl;
     curpos += yyleng;
+    return WRITE;
 }
 
 {AND} {
-    cout << "AND" << endl;
     curpos += yyleng;
+    return AND;
 }
 
 {OR} {
-    cout << "OR" << endl;
     curpos += yyleng;
+    return OR;
 }
 
 {NOT} {
-    cout << "NOT" << endl;
     curpos += yyleng;
+    return NOT;
 }
 
 {TRUE} {
-    cout << "TRUE" << endl;
     curpos += yyleng;
+    return TRUE;
 }
 
 {FALSE} {
-    cout << "FALSE" << endl;
     curpos += yyleng;
+    return FALSE;
 }
 
 {RETURN} {
-    cout << "RETURN" << endl;
     curpos += yyleng;
+    return RETURN;
 }
 
     /* ----- Arithmetic Operators ----- */
 
-{SUB} {
-    cout << "SUB" << endl;
+{ADD} {
     curpos += yyleng;
+    //return ADD;
+    return '+';
 }
 
-{ADD} {
-    cout << "ADD" << endl;
+{SUB} {
     curpos += yyleng;
+    //return SUB;
+    return '-';
+
 }
 
 {MULT} {
-    cout << "MULT" << endl;
     curpos += yyleng;
+    //return MULT;
+    return '*';
 }
 
 {DIV} {
-    cout << "DIV" << endl;
     curpos += yyleng;
+    //return DIV;
+    return '/';
 }
 
 {MOD} {
-    cout << "MOD" << endl;
     curpos += yyleng;
+    //return MOD;
+    return '%';
 }
 
     /* ----- Comparison Operators ----- */
 
 {EQ} {
-    cout << "EQUAL" << endl;
     curpos += yyleng;
+    return EQ;
 }
 
-{NEQ} {
-    cout << "NEQ" << endl;
+{NE} {
     curpos += yyleng;
+    return NE;
+    //return "<>";
 }
 
 {LT} {
-    cout << "LT" << endl;
     curpos += yyleng;
+    //return LT;
+    return '<';
 }
 
 {GT} {
-    cout << "GT" << endl;
     curpos += yyleng;
+    //return GT;
+    return '>';
 }
 
-{LTE} {
-    cout << "LTE" << endl;
+{LE} {
     curpos += yyleng;
+    return LE;
 }
 
-{GTE} {
-    cout << "GTE" << endl;
+{GE} {
     curpos += yyleng;
+    return GE;
 }
 
     /* ----- Special Symbols ----- */
 
 {SEMICOLON} {
-    cout << "SEMICOLON" << endl;
     curpos += yyleng;
+    //return SEMICOLON;
+    return ';';
 }
 
 {COLON} {
-    cout << "COLON" << endl;
     curpos += yyleng;
+    //return COLON;
+    return ':';
 }
 
 {COMMA} {
-    cout << "COMMA" << endl;
     curpos += yyleng;
+    //return COMMA;
+    return ',';
 }
 
 {L_PAREN} {
-    cout << "L_PAREN" << endl;
     curpos += yyleng;
+    //return L_PAREN;
+    return '(';
 }
 
 {R_PAREN} {
-    cout << "R_PAREN" << endl;
     curpos += yyleng;
+    //return R_PAREN;
+    return ')';
 }
 
 {L_SQUARE_BRACKET} {
-    cout << "L_SQUARE_BRACKET" << endl;
     curpos += yyleng;
+    //return L_SQUARE_BRACKET;
+    return '[';
 }
 
 {R_SQUARE_BRACKET} {
-    cout << "R_SQUARE_BRACKET" << endl;
     curpos += yyleng;
+    //return R_SQUARE_BRACKET;
+    return ']';
 }
 
 {ASSIGN} {
-    cout << "ASSIGN" << endl;
     curpos += yyleng;
+    return ASSIGN;
 }
 
     /* ----- Identifiers && Numbers ----- */
 
 {NUMBER} {
-    cout << "NUMBER" << " " << atoi(yytext) << endl;
+    yylval.int_val = atoi(yytext);
     curpos += yyleng;
+    return NUMBER;
 }
 
 {IDENTIFIER} {
-    cout << "IDENT" << " " << yytext << endl;
+    yylval.ident = new string(yytext);
     curpos += yyleng;
+    return ID;
 }
 
     /* ----- Whitespace ----- */
@@ -385,37 +404,37 @@ ASSIGN            ":="
 
 {ERR1} {
     /* Error: Identifier must begin with letter */
-    printf("Error at line %d, column %d: identifier \"%s\" must begin with a letter\n", curline, curpos, yytext);
+    printf("Lexer error at line %d, column %d: identifier \"%s\" must begin with a letter\n", curline, curpos, yytext);
     exit(0);
 }
 
 {ERR2} {
     /* Error: Identifier cannot end with an underscore */
-    printf("Error at line %d, column %d: identifier \"%s\" cannot end with an underscore\n", curline, curpos, yytext);
+    printf("Lexer error at line %d, column %d: identifier \"%s\" cannot end with an underscore\n", curline, curpos, yytext);
     exit(0);
 }
 
 {ERR3} {
     /* Error: Identifier cannot begin with an underscore */
-    printf("Error at line %d, column %d: identifier \"%s\" cannot begin with an underscore\n", curline, curpos, yytext);
+    printf("Lexer error at line %d, column %d: identifier \"%s\" cannot begin with an underscore\n", curline, curpos, yytext);
     exit(0);
 }
 
 {ERR4} {
     /* Error: Number cannot begin with an underscore */
-    printf("Error at line %d, column %d: number \"%s\" cannot begin with an underscore\n", curline, curpos, yytext);
+    printf("Lexer error at line %d, column %d: number \"%s\" cannot begin with an underscore\n", curline, curpos, yytext);
     exit(0);
 }
 
 {ERR5} {
     /* Error: Number cannot end with an underscore */
-    printf("Error at line %d, column %d: number \"%s\" cannot end with an underscore\n", curline, curpos, yytext);
+    printf("Lexer error at line %d, column %d: number \"%s\" cannot end with an underscore\n", curline, curpos, yytext);
     exit(0);
 }
 
 . {
     /* Error: Unrecognized Symbol */
-    printf("Error at line %d, column %d: unrecognized symbol \"%s\"\n", curline, curpos, yytext);
+    printf("Lexer error at line %d, column %d: unrecognized symbol \"%s\"\n", curline, curpos, yytext);
     exit(0);
 }
 
@@ -423,29 +442,5 @@ ASSIGN            ":="
 %%
 
 
-    /*
-    ----------------------------------------
-    User subroutines
-    ----------------------------------------
-    */
-
-
-int main(int argc, char** argv)
-{
-    /* try to read from a input file */
-    if(argc >= 2)
-    {
-        yyin = fopen(argv[1], "r");
-        if(yyin == NULL)
-        {
-           yyin = stdin;
-        }
-    }
-    else
-    {
-        yyin = stdin;
-    }
-
-    yylex();
-}
+/* ----- main() is in mini_l.y now ----- */
 

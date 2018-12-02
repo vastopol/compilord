@@ -64,8 +64,6 @@ ENDIF         "endif"
 ELSE          "else"
 WHILE         "while"
 DO            "do"
-FOREACH       "foreach"
-IN            "in"
 BEGINLOOP     "beginloop"
 ENDLOOP       "endloop"
 CONTINUE      "continue"
@@ -197,16 +195,6 @@ ASSIGN            ":="
 {DO} {
     curpos += yyleng;
     return DO;
-}
-
-{FOREACH} {
-    curpos += yyleng;
-    return FOREACH;
-}
-
-{IN} {
-    curpos += yyleng;
-    return IN;
 }
 
 {BEGINLOOP} {
