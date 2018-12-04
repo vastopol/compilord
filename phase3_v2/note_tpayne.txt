@@ -84,11 +84,22 @@ but there is an error with the rule where ExpList causes a syntax error.
 
 ID '(' ExpList ')' // syntax error will not compile...
 
-change to
+change explist code for another rule for solo expressions
 
-ID '(' Exp ')'
-
-this works and $3 is the parameter, but now ExpList is useless, also can't do multiple params
+ExpList
+    : /* EMPTY */      // possibly empty, comma separated. *
+        {
+            rules << "ExpList -> /* EMPTY */ \n";
+        }
+    | Exp
+        {
+            rules << "ExpList -> Exp \n";
+        }
+    | ExpList ',' Exp
+        {
+            rules << "ExpList -> Explist ',' Exp \n";
+        }
+    ;
 
 ----------------------------------------
 

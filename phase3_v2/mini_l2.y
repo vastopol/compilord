@@ -10,13 +10,6 @@
 int yyerror( char* s );
 int yylex( void );
 
-int vectorSize;               // holds the size of vectors being declared
-int reductionCt;
-ostringstream rules;   // holds grammar rules printed out by actions
-ostringstream decs;    // holds gen()-emitted target-code declarations
-ostringstream code;    // holds gen()-emitted target-code instructions
-ostringstream init;    // holds gen()-emitted target-code instructions
-
 extern FILE* yyin;     // declare extern to remove compiler error
 
 extern int curline;
@@ -25,8 +18,20 @@ extern int curpos;
 void print_funs();
 void print_symtabs();
 
+ostringstream rules;   // holds grammar rules printed out by actions
+ostringstream decs;    // holds gen()-emitted target-code declarations
+ostringstream code;    // holds gen()-emitted target-code instructions
+ostringstream bcode;    // holds gen()-emitted target-code instructions
+stack<string> bstack;  // hold code strings of bools
+
+int vectorSize;               // holds the size of vectors being declared
+int reductionCt;
+
 bool pdec_flag = true;  // parameter declarations, output $0, $1, etc...
 int pnum_cnt = 0;       // count the # of params
+
+bool continue_loop = false;
+string continue_lbl_name;
 
 string funs;              // used to write out a whole function to a string from milvec
 vector<string> funslst;   // hold all the compiled function strings
@@ -61,6 +66,7 @@ vector< map<string,string> > symtablst; // all symbol tables for every function
 
   %type   <code>     Program
   %type   <code>     Decl
+  %type   <code>     DeclList
   %type   <code>     StmtList
   %type   <code>     ExpList
   %type   <code>     FunctionDecl
@@ -134,10 +140,18 @@ StmtList
     : Stmt ';'          // nonempty, semicolon terminated. *
         {
             rules << "StmtList -> Stmt \n";
+
+            $$ = new string(*$1);
+            code.str("");
+            code.clear();
         }
     | StmtList Stmt ';'
         {
             rules << "StmtList -> StmtList Stmt ';' \n";
+
+            $$ = new string(*$1 + *$2);
+            code.str("");
+            code.clear();
         }
     ;
 
@@ -145,6 +159,10 @@ ExpList
     : /* EMPTY */      // possibly empty, comma separated. *
         {
             rules << "ExpList -> /* EMPTY */ \n";
+        }
+    | Exp
+        {
+            rules << "ExpList -> Exp \n";
         }
     | ExpList ',' Exp
         {
@@ -178,12 +196,15 @@ FunctionDecl
             rules << "   BEGINBODY   StmtList  ENDBODY \n";
                 // for code, must expand lists
 
-            // write mil code
-            funs += "func ";
-            funs += *$2;
-            funs += "\n";
-            funs += code.str();
-            funs += "endfunc\n";
+            stringstream func_dec;
+            func_dec << "func " << *$2 << "\n";
+            func_dec << *$5;
+            func_dec << *$8;
+            func_dec << *$11;
+            func_dec << "endfunc" << "\n";
+
+            funs = func_dec.str();
+            func_dec.str("");
 
             // save function
             funslst.push_back(funs);
@@ -191,6 +212,10 @@ FunctionDecl
             // reset variables
             code.str("");
             code.clear();
+            decs.str("");
+            decs.clear();
+            bcode.str("");
+            bcode.clear();
             funs = "";
             pdec_flag = true;
             pnum_cnt = 0;
@@ -202,29 +227,42 @@ Decl
     : ID ':' INTEGER                      // A scalar variable *
         {
             rules << "Decl -> ID ':' INTEGER \n";
-            code << ". " << *($1) << "\n";
+
+            decs << ". " << *($1) << "\n";
             if(pdec_flag == true)
             {
-                code << "= " << *$1 << ", $" << pnum_cnt << "\n";
+                decs << "= " << *$1 << ", $" << pnum_cnt << "\n";
                 pnum_cnt++;
             }
+            $$ = new string(decs.str());
+            decs.str("");
+            decs.clear();
         }
     | ID ':' ARRAY '[' NUMBER ']' OF INTEGER   // A vector var *
         {
             rules << "Decl -> ID ':' ARRAY '[' NUMBER ']' OF INTEGER \n";
+
             vectorSize = $5;
-            code  << ".[] " << *($1) << ", " << vectorSize << "\n";
+            decs  << ".[] " << *($1) << ", " << vectorSize << "\n";
+            $$ = new string(decs.str());
+            decs.str("");
+            decs.clear();
         }
     | ID ',' Decl                           // right recursion *
         {
             rules << "VectorDec. ->  ID ',' VectorDecl \n";
+
             //code  << ".[] " << *($1) << ", " << vectorSize << "\n"; // Broken: this will declare scalars in a list as arrays
-            code << ". " << *$1 << "\n";
+            decs << ". " << *$1 << "\n";
             if(pdec_flag == true)
             {
-                code << "= " << *$1 << ", $" << pnum_cnt << "\n";
+                decs << "= " << *$1 << ", $" << pnum_cnt << "\n";
                 pnum_cnt++;
             }
+            decs << *$3;
+            $$ = new string(decs.str());
+            decs.str("");
+            decs.clear();
         }
     ; // vectorSize is global declared at the top of main.cc
 
@@ -232,10 +270,20 @@ DeclList
     : /* EMPTY */   // possibly empty, semicolon terminated.
         {
             rules << "DeclList -> EMPTY\n";
+
+            //decls << *$1;
+            $$ = new string(decs.str());
+            decs.str("");
+            decs.clear();
         }
     | DeclList Decl ';'                      // left recursion *
         {
             rules << "DeclList -> DeclList Decl ';' \n";
+
+            decs << *$1 << *$2;
+            $$ = new string(decs.str());
+            decs.str("");
+            decs.clear();
         }
     ;
 
@@ -243,86 +291,159 @@ BoolExp
     : TRUE
         {
             rules << " TRUE \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
-            code << ". " << *$$ << "\n";                        // declare temp
-            code << "= " << *$$ << ", " << 1 << "\n";
+
+            bcode << code.str();
+            bcode << ". " << *$$ << "\n";                        // declare temp
+            bcode << "= " << *$$ << ", " << 1 << "\n";
+
+            bstack.push(bcode.str());
+            code.str("");
         }
     | FALSE
         {
             rules << " FALSE \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
-            code << ". " << *$$ << "\n";                        // declare temp
-            code << "= " << *$$ << ", " << 0 << "\n";
+
+            bcode << code.str();
+            bcode << ". " << *$$ << "\n";                        // declare temp
+            bcode << "= " << *$$ << ", " << 0 << "\n";
+
+            bstack.push(bcode.str());
+            code.str("");
+
         }
     | '(' BoolExp ')'
         {
             rules << " '(' BoolExp ')' \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
-            code << ". " << *$$ << "\n";                        // declare temp
-            code << "= " << *$$ << ", " << *$2 << "\n";
+
+            bcode << code.str();
+            bcode << ". " << *$$ << "\n";                        // declare temp
+            bcode << "= " << *$$ << ", " << *$2 << "\n";
+
+            bstack.push(bcode.str());
+            code.str("");
         }
     | NOT BoolExp
         {
             rules << " NOT BoolExp \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
-            code << ". " << *$$ << "\n";                        // declare temp
-            code << "! " << *$$ << ", " << *$2 << "\n";
+
+            bcode << code.str();
+            bcode << ". " << *$$ << "\n";                        // declare temp
+            bcode << "! " << *$$ << ", " << *$2 << "\n";
+
+            bstack.push(bcode.str());
+            code.str("");
         }
     | BoolExp AND BoolExp
         {
             rules << " BoolExp AND BoolExp \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
-            code << ". " << *$$ << "\n";                        // declare temp
-            code << "&& " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bcode << code.str();
+            bcode << ". " << *$$ << "\n";                        // declare temp
+            bcode << "&& " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bstack.push(bcode.str());
+            code.str("");
         }
     | BoolExp OR BoolExp
         {
             rules << " BoolExp OR BoolExp \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
-            code << ". " << *$$ << "\n";                        // declare temp
-            code << "|| " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bcode << code.str();
+            bcode << ". " << *$$ << "\n";                        // declare temp
+            bcode << "|| " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bstack.push(bcode.str());
+            code.str("");
         }
     | Exp EQ Exp
         {
             rules << " Exp EQ Exp \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
-            code << ". " << *$$ << "\n";                        // declare temp
-            code << "== " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bcode << code.str();
+            bcode << ". " << *$$ << "\n";                        // declare temp
+            bcode << "== " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bstack.push(bcode.str());
+            code.str("");
         }
     | Exp NE Exp
         {
             rules << " Exp NE Exp \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
-            code << ". " << *$$ << "\n";                        // declare temp
-            code << "!= " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bcode << code.str();
+            bcode << ". " << *$$ << "\n";                        // declare temp
+            bcode << "!= " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bstack.push(bcode.str());
+            code.str("");
         }
     | Exp GE Exp
         {
             rules << " Exp GE Exp \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
-            code << ". " << *$$ << "\n";                        // declare temp
-            code << ">= " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bcode << code.str();
+            bcode << ". " << *$$ << "\n";                        // declare temp
+            bcode << ">= " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bstack.push(bcode.str());
+            code.str("");
         }
     | Exp LE Exp
         {
             rules << " Exp LE Exp \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
-            code << ". " << *$$ << "\n";                        // declare temp
-            code << "<= " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bcode << code.str();
+            bcode << ". " << *$$ << "\n";                        // declare temp
+            bcode << "<= " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bstack.push(bcode.str());
+            code.str("");
         }
     | Exp '>' Exp
         {
             rules << " Exp '>' Exp \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
-            code << ". " << *$$ << "\n";                        // declare temp
-            code << "> " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bcode << code.str();
+            bcode << ". " << *$$ << "\n";                        // declare temp
+            bcode << "> " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bstack.push(bcode.str());
+            code.str("");
         }
     | Exp '<' Exp
         {
             rules << " Exp '<' Exp \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
-            code << ". " << *$$ << "\n";                        // declare temp
-            code << "< " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bcode << code.str();
+            bcode << ". " << *$$ << "\n";                        // declare temp
+            bcode << "< " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
+
+            bstack.push(bcode.str());
+            code.str("");
         }
     ;
 
@@ -330,81 +451,101 @@ Exp
     : ID                                 // scalar variable *
         {
             rules << "Exp -> ID\n";
+
             $$ = new string("_T" + to_string(reductionCt++));
+
             code << ". " << *$$ << "\n";                        // declare temp
             code << "= " << *$$ << ", " << *$1 << "\n";
         }
     | ID '[' Exp ']'       //  vector/subscripted variable *
         {
             rules << "Exp -> ID '[' Exp ']' \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
+
             code << ". " << *$$ << "\n";                        // declare temp
             code << "=[] " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
         }
     | Exp '+' Exp
         {
             rules << "Exp -> Exp '+' Exp\n";
+
             $$ = new string("_T" + to_string(reductionCt++));
+
             code << ". " << *$$ << "\n";                        // declare temp
             code << "+ " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
         }
     | Exp '-' Exp
         {
             rules << "Exp -> Exp '-' Exp\n";
+
             $$ = new string("_T" + to_string(reductionCt++));
+
             code << ". " << *$$ << "\n";                        // declare temp
             code << "- " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
         }
     | Exp '*' Exp
         {
             rules << "Exp -> Exp '*' Exp\n";
+
             $$ = new string("_T" + to_string(reductionCt++));
+
             code << ". " << *$$ << "\n";                        // declare temp
             code << "* " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
         }
     |  Exp '/' Exp
         {
             rules << "Exp -> Exp '/' Exp\n";
+
             $$ = new string("_T" + to_string(reductionCt++));
+
             code << ". " << *$$ << "\n";                        // declare temp
             code << "/ " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
         }
     | Exp '%' Exp
         {
             rules << "Exp -> Exp '%' Exp\n";
+
             $$ = new string("_T" + to_string(reductionCt++));
+
             code << ". " << *$$ << "\n";                        // declare temp
             code << "% " << *$$ << ", " << *$1 << ", " << *$3 << "\n";
     }
     | '-' Exp  %prec '('
         {
             rules << "Exp -> '-' Exp\n";
+
             $$ = new string("_T" + to_string(reductionCt++));
+
             code << ". " << *$$ << "\n";                        // declare temp
             code << "- " << *$$ << ", " << 0 << ", " << *$2 << "\n";
         }
     | NUMBER
         {
-            $$ = new string("_T" + to_string(reductionCt++));
-            code << ". " << *$$ << "\n";                        // declare temp
             rules << "Exp -> NUMBER\n";
+
+            $$ = new string("_T" + to_string(reductionCt++));
+
+            code << ". " << *$$ << "\n";                        // declare temp
             code << "= " << *$$ << ", " << $1 << "\n";
         }
     | '(' Exp ')'
         {
             rules << "Exp -> '(' Exp ')' \n";
+
             $$ = new string("_T" + to_string(reductionCt++));
+
             code << ". " << *$$ << "\n";                        // declare temp
             code << "= " << *$$ << ", " << *$2 << "\n";
         }
-    //| ID '(' ExpList ')'      // function call         // ???
-    | ID '(' Exp ')'
+    | ID '(' ExpList ')'      // function call         // ???
         {
             rules << "Exp -> ID '(' Exp ')' \n";
 
             // parameters (cant handle more than 1...)
-            code << "param " << *$3 << "\n";
             $$ = new string("_T" + to_string(reductionCt++));   // dest
+
+            code << "param " << *$3 << "\n";
             code << ". " << *$$ << "\n";                        // declare temp dest
             code << "call " << *$1 << ", " << *$$ << "\n";      // call func with dest
         }
@@ -414,21 +555,25 @@ ReadStmt
     : READ ID                                            // *
         {
             rules << "ReadStmt -> Read ID \n";
+
             code  << ".< " << *$2 << "\n";
         }
     | READ ID '[' Exp ']'
         {
             rules << "ReadStmt -> READ ID '[' Exp ']' \n";
+
             code  << ".[]< " << *$2 << ", " << *$4 << "\n";
         }
     | ReadStmt ',' ID                     // left recursion *
         {
             rules << "ReadStmt -> ReadStmt ',' ID \n";
+
             code  << ".< " << *$3 << "\n";
         }
     | ReadStmt ',' ID '[' Exp ']'         // left recursion *
         {
             rules << "ReadStmt -> ReadStmt ',' ID '[' Exp ']'\n";
+
             code  << ".[]< " << *$3 << ", " << $5 << "\n";
         }
     ;
@@ -437,11 +582,13 @@ WriteStmt
     : WRITE Exp                                          // *
         {
             rules << "WriteStmt -> WRITE Exp \n";
+
             code << ".> " << *$2 << "\n";
         }
     | WriteStmt ',' Exp                   // left recursion *
         {
             rules << "WriteStmt -> WriteStmt ',' Exp \n";
+
             code << ".> " << *$3 << "\n";
         }
 
@@ -449,20 +596,28 @@ Stmt
     : ID ASSIGN Exp    // The desination can be either scalar *
         {
             rules << "Stmt -> ID ASSIGN Exp\n";
+
             code << "= " << *$1 << ", " << *$3 << "\n";
+            $$ = new string(code.str());
         }
     | ID '[' Exp ']' ASSIGN Exp             // or subscripted *
         {
             rules << "Stmt -> ID '[' Exp ']' ASSIGN Exp\n";
+
             code << "[]= " << *$1 << ", " << *$3 << ", " << *$6 << "\n";
+            $$ = new string(code.str());
         }
     | ReadStmt                                 // See above *
         {
             rules << "Stmt -> ReadStmt" ;
+
+            $$ = new string(code.str());
         }                  // *
     | WriteStmt                                // see above *
         {
             rules << "Stmt -> WriteStmt" ;
+
+            $$ = new string(code.str());
         }                 // *
     | IF BoolExp THEN StmtList ELSE StmtList ENDIF    // outline
         {
@@ -472,14 +627,20 @@ Stmt
             string* else_lbl = new string("_L" + to_string(reductionCt++));
             string* endif_lbl = new string("_L" + to_string(reductionCt++));
 
-            code << "?:= THEN, BoolExp \n";        // if BoolExp goto THEN
-            code << ":= ELSE \n";                  // goto ELSE
-            code << ": THEN \n";                    // THEN:
-            code << "...\n";                         // dump StmtList
-            code << ":= ENDIF \n";                 // goto ENDIF
-            code << ": ELSE \n";                    // ELSE:
-            code << "...\n";                         // StmtList
-            code << ": ENDIF \n";                   // ENDIF:
+            string bool_string = bstack.top(); bstack.pop();
+
+            code << bool_string;
+            code << "?:= " << *then_lbl << ", " << *$2 << "\n";        // if BoolExp goto THEN
+            code << ":= " << *else_lbl << "\n";                  // goto ELSE
+            code << ": " << *then_lbl << "\n";                    // THEN:
+            //code << "...\n";                         // StmtList
+            code << *$4;
+            code << ":= " << *endif_lbl << "\n";                 // goto ENDIF
+            code << ": " << *else_lbl << "\n";                    // ELSE:
+            //code << "...\n";                         // StmtList
+            code << *$6;
+            code << ": " << *endif_lbl << "\n";                   // ENDIF:
+            $$ = new string(code.str());
         }
     | IF BoolExp THEN StmtList ENDIF                  // outline
         {
@@ -488,46 +649,86 @@ Stmt
             string* then_lbl = new string("_L" + to_string(reductionCt++));
             string* else_lbl = new string("_L" + to_string(reductionCt++));
 
+            string bool_string = bstack.top(); bstack.pop();
+
+            code << bool_string;
             code << "?:= " << *then_lbl << ", " << *$2 << "\n";        // if BoolExp goto THEN
             code << ":= " << *else_lbl << "\n";                  // goto ELSE
             code << ": " << *then_lbl << "\n";                    // THEN:
-            code << "...\n";                         // StmtList
+            //code << "...\n";                         // StmtList
+            code << *$4;
             code << ": " << *else_lbl << "\n";                    // ELSE:
+            $$ = new string(code.str());
         }
     | WHILE BoolExp BEGINLOOP StmtList ENDLOOP        // outline
         {
             rules << "Stmt -> WHILE BoolExp BEGINLOOP StmtList ENDLOOP\n";
 
-            code << ": WHILE \n";                  // WHILE:
-            code << "?:= BEGINLOOP, BoolExp \n";
+            string* while_lbl = new string("_L" + to_string(reductionCt++));
+            string* begin_lbl = new string("_L" + to_string(reductionCt++));
+            string* exit_lbl = new string("_L" + to_string(reductionCt++));
+
+            string bool_string = bstack.top(); bstack.pop();
+
+            if(continue_loop == true)
+            {
+                code << ": " << continue_lbl_name << "\n";
+                continue_loop = false;
+            }
+            code << ": " << *while_lbl << "\n";                  // WHILE:
+            code << bool_string;
+            code << "?:= " << *begin_lbl << ", " << *$2 << "\n";
             // if boolExp goto BEGINLOOP
-            code << ":= EXIT \n";        // otherwise, goto EXIT
-            code << ": BEGINLOOP \n";              // BEGINLOOP:
-            code << "...\n";                         // StmtList
-            code << ":= WHILE \n";                 // goto WHILE
-            code << ": EXIT \n";                   // EXIT:
+            code << ":= " << *exit_lbl << "\n";        // otherwise, goto EXIT
+            code << ": " << *begin_lbl <<  "\n";              // BEGINLOOP:
+            //code << "...\n";                         // StmtList
+            code << *$4;
+            code << ":= " << *while_lbl <<  "\n";                 // goto WHILE
+            code << ": " << *exit_lbl << "\n";                   // EXIT:
+            $$ = new string(code.str());
         }
     | DO BEGINLOOP StmtList ENDLOOP WHILE BoolExp // outline
         {
             rules << "Stmt -> DO BEGINLOOP StmtList ENDLOOP WHILE BoolExp\n";
 
-            code  << ": BEGINLOOP \n" ;         // BEGINLOOP:
-            code << "...\n";                        // StmtList
-            code << "?:= " << "BEGINLOOP" << ", " << "BoolExp \n";
+            string* begin_lbl = new string("_L" + to_string(reductionCt++));
+
+            string bool_string = bstack.top(); bstack.pop();
+
+            code  << ": " << *begin_lbl << "\n" ;         // BEGINLOOP:
+            //code << "...\n";                        // StmtList
+            code << *$3;
+            if(continue_loop == true)
+            {
+                code << ": " << continue_lbl_name << "\n";
+                continue_loop = false;
+            }
+            code << bool_string;
+            code << "?:= " << *begin_lbl << ", " << *$6 << "\n";
             // if BoolExp goto BEGINLOOP
+            $$ = new string(code.str());
         }
     | CONTINUE                                // outline
         {
             rules << "Stmt -> CONTINUE\n";
-            code  << ":= BEGINLOOP\n";
+
+            string* cont_lbl = new string("_L" + to_string(reductionCt++));
+
+            continue_loop = true;
+            continue_lbl_name = *cont_lbl;
+
+            code  << ":= " << *cont_lbl << "\n";
+            $$ = new string(code.str());
         }
     | RETURN Exp                                        // ???
         {
             rules << "Stmt -> RETURN Exp\n";
+
             $$ = new string("_T" + to_string(reductionCt++));
             code << ". " << *$$ << "\n";                        // declare temp
             code << "= " << *$$ << ", " << *$2 << "\n";
             code << "ret " << *$$ << "\n";
+            $$ = new string(code.str());
         }
     ;
 

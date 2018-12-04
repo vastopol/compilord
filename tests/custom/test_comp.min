@@ -24,8 +24,8 @@ beginlocals
 
     ## TEST: declare array
     ## PASS: can declare local array of integers
-        a : array [5]  of integer;
-        b : array [10] of integer;
+        ## a : array [5]  of integer;
+        ## b : array [10] of integer;
 
 endlocals
 
@@ -131,13 +131,13 @@ beginbody
 
         i := 1; j := 2; k := 3;
 
-        if j <= k
+        if j >= k
         then
             write j;
             ## i := j;
             ## k := 3 + 4;
-        ## else
-            ## write k;
+        else
+            write k;
             ## i := k;
             ## k := 3 * 4;
         endif;

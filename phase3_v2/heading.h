@@ -6,8 +6,9 @@
 
 /* C++ includes */
 #include <iostream>
-#include <string>
 #include <sstream>
+#include <string>
+#include <stack>
 #include <vector>
 #include <map>
 

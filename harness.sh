@@ -21,7 +21,7 @@ MILR="tests/mil_run"
 function main()
 {
     build_cc
-    test_cc
+    # test_cc
     cc_files
     # test_files
     # clean_up
