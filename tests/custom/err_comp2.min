@@ -1,3 +1,5 @@
+## file custom.min - error check compiler
+
 function potato;
 beginparams
     n : integer;

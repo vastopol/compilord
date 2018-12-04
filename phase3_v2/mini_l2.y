@@ -8,6 +8,7 @@
 #include "heading.h"
 
 int yyerror( char* s );
+int yyerror( string s );
 int yylex( void );
 
 extern FILE* yyin;     // declare extern to remove compiler error
@@ -17,6 +18,12 @@ extern int curpos;
 
 void print_funs();
 void print_symtabs();
+void semantic_error(string s);
+
+string fname;
+int loop_deep = 0;
+bool is_main = false;     // was main declared
+map<string,int> decfunctions; // names of declared functions
 
 ostringstream rules;   // holds grammar rules printed out by actions
 ostringstream decs;    // holds gen()-emitted target-code declarations
@@ -36,8 +43,9 @@ string continue_lbl_name;
 string funs;              // used to write out a whole function to a string from milvec
 vector<string> funslst;   // hold all the compiled function strings
 
-map<string,string> symtab;              // symbol table for current function
-vector< map<string,string> > symtablst; // all symbol tables for every function
+map<string,int>::iterator iter;
+map<string,int> symtab;              // symbol table for current function
+vector< map<string,int> > symtablst; // all symbol tables for every function
 
 %}
 
@@ -133,6 +141,12 @@ Program
     | Program FunctionDecl       //
         {
             rules << "Program -> ProgramFunctionDecl \n";
+
+            if(is_main == false)
+            {
+                string s = "No main function declared";
+                semantic_error(s);
+            }
         }
     ;
 
@@ -163,10 +177,17 @@ ExpList
     | Exp
         {
             rules << "ExpList -> Exp \n";
+
+            $$ = new string(*$1);
+            code << "param " << *$$ << "\n";
+
         }
     | ExpList ',' Exp
         {
             rules << "ExpList -> Explist ',' Exp \n";
+
+            $$ = new string(*$3);
+            code << "param " << *$$ << "\n";
         }
     ;
 
@@ -196,6 +217,13 @@ FunctionDecl
             rules << "   BEGINBODY   StmtList  ENDBODY \n";
                 // for code, must expand lists
 
+            if(*$2 == "main")
+            {
+                is_main = true;
+            }
+
+            decfunctions[*$2] = 0;
+
             stringstream func_dec;
             func_dec << "func " << *$2 << "\n";
             func_dec << *$5;
@@ -209,6 +237,9 @@ FunctionDecl
             // save function
             funslst.push_back(funs);
 
+            // save symtab
+            symtablst.push_back(symtab);
+
             // reset variables
             code.str("");
             code.clear();
@@ -216,7 +247,9 @@ FunctionDecl
             decs.clear();
             bcode.str("");
             bcode.clear();
+            symtab.clear();
             funs = "";
+            continue_loop = false;
             pdec_flag = true;
             pnum_cnt = 0;
 
@@ -227,6 +260,20 @@ Decl
     : ID ':' INTEGER                      // A scalar variable *
         {
             rules << "Decl -> ID ':' INTEGER \n";
+
+            iter = symtab.find(*$1);
+            if(iter != symtab.end())
+            {
+                string s = "Identifier " + *$1 + " multiple declares";
+                semantic_error(s);
+            }
+            else if(iter->first == fname)
+            {
+                string s = "Identifier " + *$1 + " same name as file";
+                semantic_error(s);
+            }
+
+            symtab[*$1] = 0; // add to symbol table
 
             decs << ". " << *($1) << "\n";
             if(pdec_flag == true)
@@ -242,6 +289,26 @@ Decl
         {
             rules << "Decl -> ID ':' ARRAY '[' NUMBER ']' OF INTEGER \n";
 
+            iter = symtab.find(*$1);
+            if(iter != symtab.end())
+            {
+                string s = "Identifier " + *$1 + " multiple declares";
+                semantic_error(s);
+            }
+            else if(iter->first == fname)
+            {
+                string s = "Identifier " + *$1 + " same name as file";
+                semantic_error(s);
+            }
+
+            if($5 <= 0)
+            {
+                string s = "Zero/Negative array size";
+                semantic_error(s);
+            }
+
+            symtab[*$1] = $5; // add to symbol table
+
             vectorSize = $5;
             decs  << ".[] " << *($1) << ", " << vectorSize << "\n";
             $$ = new string(decs.str());
@@ -252,7 +319,20 @@ Decl
         {
             rules << "VectorDec. ->  ID ',' VectorDecl \n";
 
-            //code  << ".[] " << *($1) << ", " << vectorSize << "\n"; // Broken: this will declare scalars in a list as arrays
+            iter = symtab.find(*$1);
+            if(iter != symtab.end())
+            {
+                string s = "Identifier " + *$1 + " multiple declares";
+                semantic_error(s);
+            }
+            else if(iter->first == fname)
+            {
+                string s = "Identifier " + *$1 + " same name as file";
+                semantic_error(s);
+            }
+
+            symtab[*$1] = 0; // add to symbol table
+
             decs << ". " << *$1 << "\n";
             if(pdec_flag == true)
             {
@@ -452,6 +532,18 @@ Exp
         {
             rules << "Exp -> ID\n";
 
+            iter = symtab.find(*$1);
+            if(iter == symtab.end())
+            {
+                string s = "Identifier " + *$1 + " used, but not declared";
+                semantic_error(s);
+            }
+            else if(iter->second > 0)
+            {
+                string s = "Using an array " + *$1 + " as an integer";
+                semantic_error(s);
+            }
+
             $$ = new string("_T" + to_string(reductionCt++));
 
             code << ". " << *$$ << "\n";                        // declare temp
@@ -460,6 +552,18 @@ Exp
     | ID '[' Exp ']'       //  vector/subscripted variable *
         {
             rules << "Exp -> ID '[' Exp ']' \n";
+
+            iter = symtab.find(*$1);
+            if(iter == symtab.end())
+            {
+                string s = "Identifier " + *$1 + " used, but not declared";
+                semantic_error(s);
+            }
+            else if(iter->second > 0)
+            {
+                string s = "Using an integer " + *$1 + " as an array";
+                semantic_error(s);
+            }
 
             $$ = new string("_T" + to_string(reductionCt++));
 
@@ -542,10 +646,15 @@ Exp
         {
             rules << "Exp -> ID '(' Exp ')' \n";
 
-            // parameters (cant handle more than 1...)
+            iter = decfunctions.find(*$1);
+            if(iter == decfunctions.end())
+            {
+                string s = "Using undeclared function " + *$1;
+                semantic_error(s);
+            }
+
             $$ = new string("_T" + to_string(reductionCt++));   // dest
 
-            code << "param " << *$3 << "\n";
             code << ". " << *$$ << "\n";                        // declare temp dest
             code << "call " << *$1 << ", " << *$$ << "\n";      // call func with dest
         }
@@ -660,9 +769,11 @@ Stmt
             code << ": " << *else_lbl << "\n";                    // ELSE:
             $$ = new string(code.str());
         }
-    | WHILE BoolExp BEGINLOOP StmtList ENDLOOP        // outline
+    | WHILE BoolExp BEGINLOOP {++loop_deep;} StmtList ENDLOOP        // outline
         {
             rules << "Stmt -> WHILE BoolExp BEGINLOOP StmtList ENDLOOP\n";
+
+            loop_deep--;
 
             string* while_lbl = new string("_L" + to_string(reductionCt++));
             string* begin_lbl = new string("_L" + to_string(reductionCt++));
@@ -682,14 +793,16 @@ Stmt
             code << ":= " << *exit_lbl << "\n";        // otherwise, goto EXIT
             code << ": " << *begin_lbl <<  "\n";              // BEGINLOOP:
             //code << "...\n";                         // StmtList
-            code << *$4;
+            code << *$5;
             code << ":= " << *while_lbl <<  "\n";                 // goto WHILE
             code << ": " << *exit_lbl << "\n";                   // EXIT:
             $$ = new string(code.str());
         }
-    | DO BEGINLOOP StmtList ENDLOOP WHILE BoolExp // outline
+    | DO BEGINLOOP {++loop_deep;} StmtList ENDLOOP WHILE BoolExp // outline
         {
             rules << "Stmt -> DO BEGINLOOP StmtList ENDLOOP WHILE BoolExp\n";
+
+            --loop_deep;
 
             string* begin_lbl = new string("_L" + to_string(reductionCt++));
 
@@ -697,20 +810,26 @@ Stmt
 
             code  << ": " << *begin_lbl << "\n" ;         // BEGINLOOP:
             //code << "...\n";                        // StmtList
-            code << *$3;
+            code << *$4;
             if(continue_loop == true)
             {
                 code << ": " << continue_lbl_name << "\n";
                 continue_loop = false;
             }
             code << bool_string;
-            code << "?:= " << *begin_lbl << ", " << *$6 << "\n";
+            code << "?:= " << *begin_lbl << ", " << *$7 << "\n";
             // if BoolExp goto BEGINLOOP
             $$ = new string(code.str());
         }
     | CONTINUE                                // outline
         {
             rules << "Stmt -> CONTINUE\n";
+
+            if(loop_deep == 0)
+            {
+                string s = "Continue not in a loop";
+                semantic_error(s);
+            }
 
             string* cont_lbl = new string("_L" + to_string(reductionCt++));
 
@@ -762,8 +881,13 @@ int main(int argc, char** argv)
     }
     else
     {
-        yyin = stdin;
+        //yyin = stdin;
+        cout << "Error: needs input file" << endl;
+        exit(1);
     }
+
+    fname = string(argv[1]);
+    fname.pop_back(); fname.pop_back(); fname.pop_back(); fname.pop_back(); // remove .min
 
     yyparse(); // calls yylex()
 
@@ -789,7 +913,7 @@ void print_symtabs()
         {
             string t = j.first;
             t+=" ";
-            t+=j.second;
+            t+=to_string(j.second);
             t+=" ";
             output(t);
         }
@@ -797,21 +921,12 @@ void print_symtabs()
     }
 }
 
-/*  Commentary
-
-There is a global symbol table for functions that specifies the number
-of parameters for each.
-
-A function's symbol table includes its parameters and locals without
-distinction between them.  Each variable has a non-negative size
-attribute, which is zero iff the variable is a scalar.  That table is
-a strings-to-integers map that exists during and only during the
-compilation of that function.
-
-Even though a function's symbol table doesn't need to be accessed
-beyond the end of the function's declaration, it would be a good idea
-to keep it around for debugging and dynamic bounds-checking.
-*/
+void semantic_error(string s)
+{
+    string err = "Semantic error: ";
+    err += s;
+    output(err);
+}
 
 
 

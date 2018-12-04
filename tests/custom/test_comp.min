@@ -1,9 +1,23 @@
-## Compiler Test Harness 1
+ ## Compiler Test Harness 1
 
-## testing the basic operations
-## core functionality: declare, read, write, assign, math, etc...
-## tests should cover most of the simple use cases
-## main does not have a return, no other functions
+ ## testing the basic operations
+ ## core functionality: declare, read, write, assign, math, etc...
+ ## tests should cover most of the simple use cases
+ ## main does not have a return, no other functions
+
+##----------------------------------------
+
+## multiple params
+
+function add;
+beginparams
+	a,b : integer;
+endparams
+beginlocals
+endlocals
+beginbody
+	return a + b;
+endbody
 
 ##----------------------------------------
 
@@ -11,136 +25,128 @@ function main;
 
 beginparams
 
-    ## none
+    ##  none
 
 endparams
 
 beginlocals
 
-    ## TEST: declare integer
-    ## PASS: can declare local integers single/comma list way
+     ## TEST: declare integer
+     ## PASS: can declare local integers single/comma list way
         i : integer;
         j,k : integer;
 
-    ## TEST: declare array
-    ## PASS: can declare local array of integers
-        ## a : array [5]  of integer;
-        ## b : array [10] of integer;
+     ## TEST: declare array
+     ## PASS: can declare local array of integers
+        a : array [5]  of integer;
+        b : array [10] of integer;
 
 endlocals
 
 beginbody
 
-    ## TEST: read write integers (i,j,k)
-    ## PASS: can read and write integers single/comma list way
-        ## read  i;
-        ## write i;
-        ## read  j,k;
-        ## write j,k;
+     ## TEST: read write integers (i,j,k)
+     ## PASS: can read and write integers single/comma list way
+         read  i;
+         write i;
+         read  j,k;
+         write j,k;
 
-    ## TEST: read write array (a,b)
-    ## PASS: can read and write arrays
-        ## read  a[0];
-        ## write a[0];
-        ## read  b[1];
-        ## write b[1];
-        ## i := 0;
-        ## read  a[i];
-        ## write a[i];
-        ## read  a[i+1];
-        ## write a[i+1];
+     ## TEST: read write array (a,b)
+     ## PASS: can read and write arrays
+         read  a[0];
+         write a[0];
+         read  b[1];
+         write b[1];
+         i := 0;
+         read  a[i];
+         write a[i];
+         read  a[i+1];
+         write a[i+1];
 
-    ## TEST: assign integer/array (i,j,k,a,b)
-    ## PASS: int = num, int = int, int = arr, arr = num, arr = int, arr = arr
-        ## i := -1;       write i;     ## int = num  -1
-        ## i := 0;        write i;     ## int = num   0
-        ## j := 1;        write j;     ## int = num   1
-        ## k := j;        write k;     ## int = int   1
-        ## a[1] := 0;     write a[1];  ## arr = num   0
-        ## b[0] := 2;     write b[0];  ## arr = num   2
-        ## a[0] := j;     write a[0];  ## arr = int   1
-        ## a[0] := b[0];  write a[0];  ## arr = arr   2
-        ## k := a[0];     write k;     ## int = arr   2
-        ## a[k] := 0;     write a[k];  ## arr = int   0
-        ## j := a[k];     write j;     ## int = arr   0
+     ## TEST: assign integer/array (i,j,k,a,b)
+     ## PASS: int = num, int = int, int = arr, arr = num, arr = int, arr = arr
+         i := -1;       write i;      ## int = num  -1
+         i := 0;        write i;      ## int = num   0
+         j := 1;        write j;      ## int = num   1
+         k := j;        write k;      ## int = int   1
+         a[1] := 0;     write a[1];   ## arr = num   0
+         b[0] := 2;     write b[0];   ## arr = num   2
+         a[0] := j;     write a[0];   ## arr = int   1
+         a[0] := b[0];  write a[0];   ## arr = arr   2
+         k := a[0];     write k;      ## int = arr   2
+         a[k] := 0;     write a[k];   ## arr = int   0
+         j := a[k];     write j;      ## int = arr   0
 
-    ## TEST: arithmetic expressions (i,j,k,a)
-    ## PASS: num op num, int op num, num op int, int op int, etc...
-        ## num op num
-        ## i := 0;
-        ## i := 5 + 3;  write i;  i := 0;  ## 8
-        ## i := 5 - 3;  write i;  i := 0;  ## 2
-        ## i := 5 * 3;  write i;  i := 0;  ## 15
-        ## i := 5 / 3;  write i;  i := 0;  ## 1
-        ## i := 5 % 3;  write i;  i := 0;  ## 2
-        ## int op num
-        ## i := 0;  j := 5;
-        ## i := j + 3;  write i;  i := 0;  ## 8
-        ## i := j - 3;  write i;  i := 0;  ## 2
-        ## i := j * 3;  write i;  i := 0;  ## 15
-        ## i := j / 3;  write i;  i := 0;  ## 1
-        ## i := j % 3;  write i;  i := 0;  ## 2
-        ## num op int
-        ## i := 0;  k := 3;
-        ## i := 5 + k;  write i;  i := 0;  ## 8
-        ## i := 5 - k;  write i;  i := 0;  ## 2
-        ## i := 5 * k;  write i;  i := 0;  ## 15
-        ## i := 5 / k;  write i;  i := 0;  ## 1
-        ## i := 5 % k;  write i;  i := 0;  ## 2
-        ## int op int
-        ## i := 0;  j := 5;  k := 3;
-        ## i := j + k;  write i;  i := 0;  ## 8
-        ## i := j - k;  write i;  i := 0;  ## 2
-        ## i := j * k;  write i;  i := 0;  ## 15
-        ## i := j / k;  write i;  i := 0;  ## 1
-        ## i := j % k;  write i;  i := 0;  ## 2
-        ## more expressions
-        ## j := 10; k := 20;
-        ## i := 1 + 2 + 3; write i;        ##  6
-        ## i := 1 + j + 2 + k; write i;    ##  33
-        ## i := ( 1 - 2 ); write i;        ## -1
-        ## expressions and arrays
-        ## j := 1; k := 2;
-        ## a[0] := -1; write a[0];         ## -1
-        ## a[0] := 1 + 1; write a[0];      ##  2
-        ## a[0] := j + k; write a[0];      ##  3
-        ## i := a[0] + 1; write i;         ##  4
+     ## TEST: arithmetic expressions (i,j,k,a)
+     ## PASS: num op num, int op num, num op int, int op int, etc...
+         ## num op num
+         i := 0;
+         i := 5 + 3;  write i;  i := 0;   ## 8
+         i := 5 - 3;  write i;  i := 0;   ## 2
+         i := 5 * 3;  write i;  i := 0;   ## 15
+         i := 5 / 3;  write i;  i := 0;   ## 1
+         i := 5 % 3;  write i;  i := 0;   ## 2
+         ## int op num
+         i := 0;  j := 5;
+         i := j + 3;  write i;  i := 0;   ## 8
+         i := j - 3;  write i;  i := 0;   ## 2
+         i := j * 3;  write i;  i := 0;   ## 15
+         i := j / 3;  write i;  i := 0;   ## 1
+         i := j % 3;  write i;  i := 0;   ## 2
+         ## num op int
+         i := 0;  k := 3;
+         i := 5 + k;  write i;  i := 0;   ## 8
+         i := 5 - k;  write i;  i := 0;   ## 2
+         i := 5 * k;  write i;  i := 0;   ## 15
+         i := 5 / k;  write i;  i := 0;   ## 1
+         i := 5 % k;  write i;  i := 0;   ## 2
+         ## int op int
+         i := 0;  j := 5;  k := 3;
+         i := j + k;  write i;  i := 0;   ## 8
+         i := j - k;  write i;  i := 0;   ## 2
+         i := j * k;  write i;  i := 0;   ## 15
+         i := j / k;  write i;  i := 0;   ## 1
+         i := j % k;  write i;  i := 0;   ## 2
+         ## more expressions
+         j := 10; k := 20;
+         i := 1 + 2 + 3; write i;          ## 6
+         i := 1 + j + 2 + k; write i;      ## 33
+         i := ( 1 - 2 ); write i;          ## -1
+         ## expressions and arrays
+         j := 1; k := 2;
+         a[0] := -1; write a[0];          ## -1
+         a[0] := 1 + 1; write a[0];       ## 2
+         a[0] := j + k; write a[0];       ## 3
+         i := a[0] + 1; write i;          ## 4
 
-    ## TEST: boolean expressions with if statements (i,j,k)
-    ## PASS: none
-    ## FAIL: all
-        ## i := 0;
-        ## if true  then write i; endif;
-        ## if false then write i; endif;
-        ## if not true  then write i; endif;
-        ## if not false then write i; endif;
-        ## i := 1; j := 1;
-        ## if i < j  then write i;  endif;
-        ## if i <= j then write i;  endif;
-        ## if i > j  then write i;  endif;
-        ## if i >= j then write i;  endif;
-        ## if i == j then write i;  endif;
-        ## if i <> j then write i; endif;
-        ## i := 2; j := 3;
-        ## if i < j  then write i; else write j; endif;
-        ## if i <= j then write i; else write j; endif;
-        ## if i > j  then write i; else write j; endif;
-        ## if i >= j then write i; else write j; endif;
-        ## if i == j then write i; else write j; endif;
-        ## if i <> j then write i; else write j; endif;
+     ## TEST: boolean expressions with if statements (i,j,k)
+     ## PASS: all
+         i := 0;
+         if true  then write i; endif;
+         if false then write i; endif;
+         if not true  then write i; endif;
+         if not false then write i; endif;
+         i := 1; j := 1;
+         if i < j  then write i;  endif;
+         if i <= j then write i;  endif;
+         if i > j  then write i;  endif;
+         if i >= j then write i;  endif;
+         if i == j then write i;  endif;
+         if i <> j then write i; endif;
+         i := 2; j := 3;
+         if i < j  then write i; else write j; endif;
+         if i <= j then write i; else write j; endif;
+         if i > j  then write i; else write j; endif;
+         if i >= j then write i; else write j; endif;
+         if i == j then write i; else write j; endif;
+         if i <> j then write i; else write j; endif;
 
-        i := 1; j := 2; k := 3;
-
-        if j >= k
-        then
-            write j;
-            ## i := j;
-            ## k := 3 + 4;
-        else
-            write k;
-            ## i := k;
-            ## k := 3 * 4;
-        endif;
+     ## TEST: function calls
+     ## PASS: all
+         i := 3; j := 2;
+         k := add(i,j);
+         write(k);  ## 5
 
 endbody
 

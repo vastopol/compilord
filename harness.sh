@@ -22,6 +22,7 @@ function main()
 {
     build_cc
     # test_cc
+    test_error
     cc_files
     # test_files
     # clean_up
@@ -51,10 +52,32 @@ function test_cc()
 
     $COMP $TESTS/test_comp.min > test_comp.min.mil
 
-    cat test_comp.min.mil
+    cat test_comp.min.mil;
     echo
 
     $MILR test_comp.min.mil
+}
+#----------------------------------------
+
+# compile and run custom tests
+function test_error()
+{
+    echo
+    echo "Testing Errors:"
+    echo
+
+    $COMP $TESTS/err_comp1.min > err_comp1.min.mil
+    $COMP $TESTS/err_comp2.min > err_comp2.min.mil
+    $COMP $TESTS/err_comp3.min > err_comp3.min.mil
+
+    cat err_comp1.min.mil;
+    echo
+
+    cat err_comp2.min.mil;
+    echo
+
+    cat err_comp3.min.mil;
+    echo
 }
 #----------------------------------------
 
@@ -95,7 +118,7 @@ function clean_up()
     echo "Clean up:"
     echo
 
-    rm *.min.mil
+    rm *.mil
 
     cd $FOLDER
     make clean

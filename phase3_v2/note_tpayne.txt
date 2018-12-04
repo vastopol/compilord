@@ -103,15 +103,18 @@ ExpList
 
 ----------------------------------------
 
-the last things left are
+/*  Commentary
 
-branches
-    if
-    if/else
+There is a global symbol table for functions that specifies the number
+of parameters for each.
 
-loops
-    while
-    do while
+A function's symbol table includes its parameters and locals without
+distinction between them.  Each variable has a non-negative size
+attribute, which is zero iff the variable is a scalar.  That table is
+a strings-to-integers map that exists during and only during the
+compilation of that function.
 
-continue
-
+Even though a function's symbol table doesn't need to be accessed
+beyond the end of the function's declaration, it would be a good idea
+to keep it around for debugging and dynamic bounds-checking.
+*/
