@@ -20,11 +20,11 @@ MILR="tests/mil_run"
 function main()
 {
     build_cc
-    # test_cc
+    test_cc
     test_error
     cc_files
-    # test_files
-    # clean_up
+    test_files
+    clean_up
 }
 
 #----------------------------------------
@@ -54,7 +54,7 @@ function test_cc()
     cat test_comp.min.mil;
     echo
 
-    $MILR test_comp.min.mil
+    $MILR test_comp.min.mil <<< '1 2 3 4 5 6 7' # there are 7 reads in the test file
 }
 #----------------------------------------
 
@@ -105,7 +105,7 @@ function test_files()
     for i in $(ls | grep \.min.mil)
     do
         echo $i
-        $MILR $i <<< 10 # heredoc should work
+        $MILR $i <<< '10 5' # mytest.min has 2 reads
         echo
     done
 }

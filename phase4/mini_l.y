@@ -1,25 +1,26 @@
-/* -*- c++ -*- */
-/* source.y for Mini-L to MIL Fall 2018*/
-
+// Mini-L Parser File
 
 // Everything from here to "%}" is copied verbatim to the top of source.tab.c
 %{
 
 #include "heading.h"
 
-int yyerror( char* s );
-int yyerror( string s );
-int yylex( void );
+// extern to remove compiler error
+extern FILE* yyin;
+extern int yylex(void);
 
-extern FILE* yyin;     // declare extern to remove compiler error
-
+// extern from lex file
 extern int curline;
 extern int curpos;
 
+// User Subroutines
+int yyerror(char* s);
+int yyerror(string s);
 void print_funs();
 void print_symtabs();
 void semantic_error(string s);
 
+// Data Structures
 string fname;
 int loop_deep = 0;
 bool is_main = false;     // was main declared
@@ -786,19 +787,17 @@ Stmt
                 code << ": " << continue_lbl_name << "\n";
                 continue_loop = false;
             }
-            code << ": " << *while_lbl << "\n";                  // WHILE:
+            code << ": " << *while_lbl << "\n";                   // WHILE:
             code << bool_string;
-            code << "?:= " << *begin_lbl << ", " << *$2 << "\n";
-            // if boolExp goto BEGINLOOP
-            code << ":= " << *exit_lbl << "\n";        // otherwise, goto EXIT
-            code << ": " << *begin_lbl <<  "\n";              // BEGINLOOP:
-            //code << "...\n";                         // StmtList
-            code << *$5;
-            code << ":= " << *while_lbl <<  "\n";                 // goto WHILE
+            code << "?:= " << *begin_lbl << ", " << *$2 << "\n"; // if boolExp goto BEGINLOOP
+            code << ":= " << *exit_lbl << "\n";                  // otherwise, goto EXIT
+            code << ": " << *begin_lbl <<  "\n";                 // BEGINLOOP:
+            code << *$5;                                         // StmtList
+            code << ":= " << *while_lbl <<  "\n";                // goto WHILE
             code << ": " << *exit_lbl << "\n";                   // EXIT:
             $$ = new string(code.str());
         }
-    | DO BEGINLOOP {++loop_deep;} StmtList ENDLOOP WHILE BoolExp // outline
+    | DO BEGINLOOP {++loop_deep;} StmtList ENDLOOP WHILE BoolExp
         {
             rules << "Stmt -> DO BEGINLOOP StmtList ENDLOOP WHILE BoolExp\n";
 
@@ -809,19 +808,17 @@ Stmt
             string bool_string = bstack.top(); bstack.pop();
 
             code  << ": " << *begin_lbl << "\n" ;         // BEGINLOOP:
-            //code << "...\n";                        // StmtList
-            code << *$4;
+            code << *$4;                                  // StmtList
             if(continue_loop == true)
             {
                 code << ": " << continue_lbl_name << "\n";
                 continue_loop = false;
             }
             code << bool_string;
-            code << "?:= " << *begin_lbl << ", " << *$7 << "\n";
-            // if BoolExp goto BEGINLOOP
+            code << "?:= " << *begin_lbl << ", " << *$7 << "\n"; // if BoolExp goto BEGINLOOP
             $$ = new string(code.str());
         }
-    | CONTINUE                                // outline
+    | CONTINUE
         {
             rules << "Stmt -> CONTINUE\n";
 
@@ -839,7 +836,7 @@ Stmt
             code  << ":= " << *cont_lbl << "\n";
             $$ = new string(code.str());
         }
-    | RETURN Exp                                        // ???
+    | RETURN Exp
         {
             rules << "Stmt -> RETURN Exp\n";
 
@@ -852,20 +849,6 @@ Stmt
     ;
 
 %%
-
-// Here is the function that reports lexical and parse errors.  It is
-// overloaded so that error messages can be either C strings or C++
-// strings.
-
-int yyerror( string s ) {  // error handler routine
-  extern int  yylineno;    // defined and maintained in lex.c
-  extern char* yytext;     // defined and maintained in lex.c
-  cerr << "ERROR: " << s << " at symbol " << yytext;
-  cerr << " on line " << curline << " position " << curpos << endl;
-  exit( 1 );
-}
-
-int yyerror( char* s ) { return yyerror( string(s) ); }
 
 
 int main(int argc, char** argv)
@@ -895,18 +878,18 @@ int main(int argc, char** argv)
     //print_symtabs();
 }
 
+// print out mil code for functions
 void print_funs()
 {
-    // print out mil code for functions
     for(auto i : funslst)
     {
         output(i);
     }
 }
 
+// print out symbol tables
 void print_symtabs()
 {
-    // print out symbol tables
     for(auto i : symtablst)
     {
         for( auto j : i )
@@ -928,5 +911,15 @@ void semantic_error(string s)
     output(err);
 }
 
+// Here is the function that reports lexical and parse errors.
+// It is overloaded for char* && string
+int yyerror( char* s ) { return yyerror(string(s)); }
 
-
+int yyerror( string s )
+{
+  extern int  yylineno;    // defined and maintained in lex.c
+  extern char* yytext;     // defined and maintained in lex.c
+  cerr << "ERROR: " << s << " at symbol " << yytext;
+  cerr << " on line " << curline << " position " << curpos << endl;
+  exit( 1 );
+}

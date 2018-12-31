@@ -1,6 +1,6 @@
 all:
-	bison -v -d --file-prefix=y mini_l2.y
-	flex mini_l2.lex
+	bison -v -d --file-prefix=y mini_l.y
+	flex mini_l.lex
 	g++ -std=c++11 -g -o compiler y.tab.c lex.yy.c -lfl -Wno-write-strings
 clean:
 	rm compiler lex.yy.c y.output y.tab.* *.min.txt

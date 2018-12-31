@@ -1,120 +1,35 @@
-Notes on phase3 version 2 based on t paynes compiler
 
-i think i have fixed some things, but other stuff is broken.
+Design Commentary:
 
-----------------------------------------
+-------------------
 
-variable declarations: (fixed)
+The compiler is implemented with Flex and Bison in C++11.
+The lex file specifies the scanner/lexical analyzer and describes the valid tokens and rules. (used for yylex() function)
+The y file specifies the grammar rules, their precedence, and the semantic actions that go with them. (used for yyparse() function)
+Most rules generate some mil code and/or modify the global data structures.
 
-the last part of the "Decl" statement is broken.
-if declare a list of scalars it will set the first scalar as array, but the others are scalars
+unique things in the lex file:
+- need to #include "y.tab.h" for the automatically generated file
+- comments need to be tabbed over or it causes errors
 
-this declare
-j,k : integer
+unique things in the y file:
+- need to declare extern FILE* yyin; to remove a compiler error "error: ‘yyin’ was not declared in this scope"
+- need to declare extern int yylex(void); to remove a compiler error "error: ‘yylex’ was not declared in this scope"
 
-becomes this mil code
-. k
-.[] j, 0
-
-this is the specific rule
-
-    | ID ',' Decl                           // right recursion *
-        {
-            rules << "VectorDec. ->  ID ',' VectorDecl \n";
-            code  << ".[] " << *($1) << ", " << vectorSize << "\n"; // this will declare scalars in a list as array
-        }
-
-fix by changing the rule to scalars only.
-in the example tests never saw a list of arrays, only lists of scalars
-
-code << ". " << *$1 << "\n";
-
-----------------------------------------
-
-use without declare error: (fixed)
-
-in some operations it will
-then it creates a temp variable, but doesnt output the declaration.
-then it uses to the temp. this causes an error of using an undeclared variable.
-
-Error: Use of undeclared variable _T0
-
-fix by adding a declaration after each temp is made
-
-$$ = new string("_T" + to_string(reductionCt++));
-code << ". " << *$$ << "\n";                        // add this to declare temp
-
-----------------------------------------
-
-function parameter declarations: (fixed)
-
-in a function declaration need to declare parameters and then set to the position arguments
-this is done by adding 2 new rules beginparams and endparams which set a bool.
-then in the Decl rule it checks whether the params bool is true
+The Data Structures in the y file:
 
 
-beginparams
-    : BEGINPARAMS
-        {
-            pdec_flag = true;
-        }
-      ;
+string funs;              // used to write out a whole function to a string from milvec
+vector<string> funslst;   // hold all the compiled function strings
+    There is a global symbol table for functions (DOESN"T: that specifies the number of parameters for each.)
+    A function's symbol table includes its parameters and locals without distinction between them.
+    Each variable has a non-negative size attribute, which is zero iff the variable is a scalar.
+    That table is a strings-to-integers map that exists during and only during the compilation of that function.
 
-endparams
-    : ENDPARAMS
-        {
-            pdec_flag = false; // set flag to done with params
-        }
-    ;
-
-inside the Decl rule add a check for the bool, only for scalars (parameters are scalars)
-
-    if(pdec_flag == true)
-    {
-        code << "= " << *$1 << ", $" << pnum_cnt << "\n";
-        pnum_cnt++;
-    }
-
-----------------------------------------
-
-function calls: (broken)
-
-in function calls need to handle passing parameters
-but there is an error with the rule where ExpList causes a syntax error.
-
-ID '(' ExpList ')' // syntax error will not compile...
-
-change explist code for another rule for solo expressions
-
-ExpList
-    : /* EMPTY */      // possibly empty, comma separated. *
-        {
-            rules << "ExpList -> /* EMPTY */ \n";
-        }
-    | Exp
-        {
-            rules << "ExpList -> Exp \n";
-        }
-    | ExpList ',' Exp
-        {
-            rules << "ExpList -> Explist ',' Exp \n";
-        }
-    ;
-
-----------------------------------------
-
-/*  Commentary
-
-There is a global symbol table for functions that specifies the number
-of parameters for each.
-
-A function's symbol table includes its parameters and locals without
-distinction between them.  Each variable has a non-negative size
-attribute, which is zero iff the variable is a scalar.  That table is
-a strings-to-integers map that exists during and only during the
-compilation of that function.
 
 Even though a function's symbol table doesn't need to be accessed
 beyond the end of the function's declaration, it would be a good idea
 to keep it around for debugging and dynamic bounds-checking.
-*/
+
+
+
