@@ -7,8 +7,7 @@
 
 # shell variables used by the various functions below.
 
-# FOLDER="phase3"  # my compiler
-FOLDER="phase3_v2" # t payne compiler
+FOLDER="phase4"
 FILES="tests"
 TESTS="tests/custom"
 COMP=$FOLDER"/compiler"
