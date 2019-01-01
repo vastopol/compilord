@@ -1,8 +1,10 @@
 // Mini-L Parser File
 
+// DECLARATIONS - source.tab.c
 // Everything from here to "%}" is copied verbatim to the top of source.tab.c
 %{
 
+// other includes
 #include "heading.h"
 
 // extern to remove compiler error
@@ -21,68 +23,74 @@ void print_symtabs();
 void semantic_error(string s);
 
 // Data Structures
-string fname;
-int loop_deep = 0;
-bool is_main = false;     // was main declared
-map<string,int> decfunctions; // names of declared functions
-
-ostringstream rules;   // holds grammar rules printed out by actions
-ostringstream decs;    // holds gen()-emitted target-code declarations
-ostringstream code;    // holds gen()-emitted target-code instructions
-ostringstream bcode;    // holds gen()-emitted target-code instructions
-stack<string> bstack;  // hold code strings of bools
-
-int vectorSize;               // holds the size of vectors being declared
-int reductionCt;
-
-bool pdec_flag = true;  // parameter declarations, output $0, $1, etc...
-int pnum_cnt = 0;       // count the # of params
-
+string fname;             // error check if function has same name as file
+bool is_main = false;     // error check was main function declared
+int loop_deep = 0;        // error check counter for continue out of a loop
 bool continue_loop = false;
 string continue_lbl_name;
 
-string funs;              // used to write out a whole function to a string from milvec
-vector<string> funslst;   // hold all the compiled function strings
+int vectorSize;           // holds the size of vectors being declared
+int reductionCt;
 
-map<string,int>::iterator iter;
+bool pdec_flag = true;  // if inside of parameter declarations, output $0, $1, etc...
+int pnum_cnt = 0;       // count the # of params
+
+map<string,int>::iterator iter; // general iterator for map<string,int>
+
+// string streams
+ostringstream rules;   // holds grammar rules printed out by actions
+ostringstream decs;    // holds gen()-emitted target-code declarations
+ostringstream code;    // holds gen()-emitted target-code instructions
+ostringstream bcode;   // holds gen()-emitted target-code instructions
+stack<string> bstack;  // stack for holding code strings of bools
+
+// functions
+string funs;                  // used to write out a whole function to a string from milvec
+vector<string> funslst;       // hold all the compiled function strings
+map<string,int> decfunctions; // names of declared functions
+
+// symbol tables
 map<string,int> symtab;              // symbol table for current function
 vector< map<string,int> > symtablst; // all symbol tables for every function
 
 %}
 
-
+// UNION - YYSTYPE
+// Here we define the types and names of the components of YYSTYPE, which
+// is the type of the semantic portion of parse-stack entries.
 %union{
 
-  // Here we define the types and names of the components of YYSTYPE, which
-  // is the type of the semantic portion of parse-stack entries.
+// TERMINALS
+// declarations of union members for lexical values of tokens
+int        junk;         // for one-of-a-kind lexical values
+int	     int_val;      // values of integer literals, i.e., NUMBER
+string*    ident;        // points to identifers' actual lexemes
 
-  // declarations of union members for lexical values of tokens
-  int                 junk;         // for one-of-a-kind lexical values
-  int	              int_val;      // values of integer literals, i.e., NUMBER
-  string*             ident;        // points to identifers' actual lexemes
-
-  // declarations of union members lexical values of non-terminals,
-  // which are pointers to translation records
-  string*             code;         // for all nonterminals.
+// NONTERMINALS
+// declarations of union members lexical values of non-terminals,
+// which are pointers to translation records
+string*    code;         // for all nonterminals.
 
 }
 
+// START SYMBOL
 // Here is the start symbol of the grammar.
-%start	                    Program
+%start    Program
 
+// TYPES - NONTERMINALS
 // Here we specify the non-terminals symbols and which components of
 // the union YYSTYPE their translation records will occupy.
+%type   <code>     Program
+%type   <code>     Decl
+%type   <code>     DeclList
+%type   <code>     StmtList
+%type   <code>     ExpList
+%type   <code>     FunctionDecl
+%type   <code>     BoolExp
+%type   <ident>    Exp
+%type   <code>     Stmt
 
-  %type   <code>     Program
-  %type   <code>     Decl
-  %type   <code>     DeclList
-  %type   <code>     StmtList
-  %type   <code>     ExpList
-  %type   <code>     FunctionDecl
-  %type   <code>     BoolExp
-  %type   <ident>    Exp
-  %type   <code>     Stmt
-
+// PRECEDENCE - TERMINALS
 // Here, in order of increasing precedence, are the names of the
 // tokens, their associativity, and which components of the union
 // YYSTYPE their lexical values will occupy.
@@ -130,6 +138,7 @@ vector< map<string,int> > symtablst; // all symbol tables for every function
 %token     <junk>       HI
 
 
+// GRAMMAR RULES
 // Here are the grammar rules; their semantic actions will be added later
 
 %%
@@ -152,7 +161,7 @@ Program
     ;
 
 StmtList
-    : Stmt ';'          // nonempty, semicolon terminated. *
+    : Stmt ';'          // nonempty, semicolon terminated
         {
             rules << "StmtList -> Stmt \n";
 
@@ -171,7 +180,7 @@ StmtList
     ;
 
 ExpList
-    : /* EMPTY */      // possibly empty, comma separated. *
+    : /* EMPTY */      // possibly empty, comma separated.
         {
             rules << "ExpList -> /* EMPTY */ \n";
         }
@@ -208,15 +217,14 @@ endparams
 
 FunctionDecl
     : FUNCTION ID ';'
-      beginparams DeclList  endparams
-      BEGINLOCALS DeclList  ENDLOCALS
-      BEGINBODY   StmtList  ENDBODY
+      beginparams DeclList endparams
+      BEGINLOCALS DeclList ENDLOCALS
+      BEGINBODY   StmtList ENDBODY
         {
             rules << "FunctionDecl -> FUNCTION ID ';' \n";
             rules << "   BEGINPARAMS DeclList  ENDPARAMS \n"; // scalars
             rules << "   BEGINLOCALS DeclList  ENDLOCALS \n";
             rules << "   BEGINBODY   StmtList  ENDBODY \n";
-                // for code, must expand lists
 
             if(*$2 == "main")
             {
@@ -253,12 +261,11 @@ FunctionDecl
             continue_loop = false;
             pdec_flag = true;
             pnum_cnt = 0;
-
         }
     ;
 
 Decl
-    : ID ':' INTEGER                      // A scalar variable *
+    : ID ':' INTEGER
         {
             rules << "Decl -> ID ':' INTEGER \n";
 
@@ -286,7 +293,7 @@ Decl
             decs.str("");
             decs.clear();
         }
-    | ID ':' ARRAY '[' NUMBER ']' OF INTEGER   // A vector var *
+    | ID ':' ARRAY '[' NUMBER ']' OF INTEGER
         {
             rules << "Decl -> ID ':' ARRAY '[' NUMBER ']' OF INTEGER \n";
 
@@ -316,7 +323,7 @@ Decl
             decs.str("");
             decs.clear();
         }
-    | ID ',' Decl                           // right recursion *
+    | ID ',' Decl                           // right recursion
         {
             rules << "VectorDec. ->  ID ',' VectorDecl \n";
 
@@ -345,19 +352,18 @@ Decl
             decs.str("");
             decs.clear();
         }
-    ; // vectorSize is global declared at the top of main.cc
+    ;
 
 DeclList
     : /* EMPTY */   // possibly empty, semicolon terminated.
         {
             rules << "DeclList -> EMPTY\n";
 
-            //decls << *$1;
             $$ = new string(decs.str());
             decs.str("");
             decs.clear();
         }
-    | DeclList Decl ';'                      // left recursion *
+    | DeclList Decl ';'                      // left recursion
         {
             rules << "DeclList -> DeclList Decl ';' \n";
 
@@ -529,7 +535,7 @@ BoolExp
     ;
 
 Exp
-    : ID                                 // scalar variable *
+    : ID
         {
             rules << "Exp -> ID\n";
 
@@ -550,7 +556,7 @@ Exp
             code << ". " << *$$ << "\n";                        // declare temp
             code << "= " << *$$ << ", " << *$1 << "\n";
         }
-    | ID '[' Exp ']'       //  vector/subscripted variable *
+    | ID '[' Exp ']'
         {
             rules << "Exp -> ID '[' Exp ']' \n";
 
@@ -643,7 +649,7 @@ Exp
             code << ". " << *$$ << "\n";                        // declare temp
             code << "= " << *$$ << ", " << *$2 << "\n";
         }
-    | ID '(' ExpList ')'      // function call         // ???
+    | ID '(' ExpList ')'      // function call
         {
             rules << "Exp -> ID '(' Exp ')' \n";
 
@@ -662,7 +668,7 @@ Exp
     ;
 
 ReadStmt
-    : READ ID                                            // *
+    : READ ID
         {
             rules << "ReadStmt -> Read ID \n";
 
@@ -674,13 +680,13 @@ ReadStmt
 
             code  << ".[]< " << *$2 << ", " << *$4 << "\n";
         }
-    | ReadStmt ',' ID                     // left recursion *
+    | ReadStmt ',' ID                     // left recursion
         {
             rules << "ReadStmt -> ReadStmt ',' ID \n";
 
             code  << ".< " << *$3 << "\n";
         }
-    | ReadStmt ',' ID '[' Exp ']'         // left recursion *
+    | ReadStmt ',' ID '[' Exp ']'         // left recursion
         {
             rules << "ReadStmt -> ReadStmt ',' ID '[' Exp ']'\n";
 
@@ -689,13 +695,13 @@ ReadStmt
     ;
 
 WriteStmt
-    : WRITE Exp                                          // *
+    : WRITE Exp
         {
             rules << "WriteStmt -> WRITE Exp \n";
 
             code << ".> " << *$2 << "\n";
         }
-    | WriteStmt ',' Exp                   // left recursion *
+    | WriteStmt ',' Exp                   // left recursion
         {
             rules << "WriteStmt -> WriteStmt ',' Exp \n";
 
@@ -703,33 +709,33 @@ WriteStmt
         }
 
 Stmt
-    : ID ASSIGN Exp    // The desination can be either scalar *
+    : ID ASSIGN Exp
         {
             rules << "Stmt -> ID ASSIGN Exp\n";
 
             code << "= " << *$1 << ", " << *$3 << "\n";
             $$ = new string(code.str());
         }
-    | ID '[' Exp ']' ASSIGN Exp             // or subscripted *
+    | ID '[' Exp ']' ASSIGN Exp
         {
             rules << "Stmt -> ID '[' Exp ']' ASSIGN Exp\n";
 
             code << "[]= " << *$1 << ", " << *$3 << ", " << *$6 << "\n";
             $$ = new string(code.str());
         }
-    | ReadStmt                                 // See above *
+    | ReadStmt
         {
             rules << "Stmt -> ReadStmt" ;
 
             $$ = new string(code.str());
-        }                  // *
-    | WriteStmt                                // see above *
+        }
+    | WriteStmt
         {
             rules << "Stmt -> WriteStmt" ;
 
             $$ = new string(code.str());
-        }                 // *
-    | IF BoolExp THEN StmtList ELSE StmtList ENDIF    // outline
+        }
+    | IF BoolExp THEN StmtList ELSE StmtList ENDIF
         {
             rules << "Stmt -> IF BoolExp THEN StmtList ELSE StmtList ENDIF\n";
 
@@ -740,19 +746,17 @@ Stmt
             string bool_string = bstack.top(); bstack.pop();
 
             code << bool_string;
-            code << "?:= " << *then_lbl << ", " << *$2 << "\n";        // if BoolExp goto THEN
-            code << ":= " << *else_lbl << "\n";                  // goto ELSE
-            code << ": " << *then_lbl << "\n";                    // THEN:
-            //code << "...\n";                         // StmtList
-            code << *$4;
-            code << ":= " << *endif_lbl << "\n";                 // goto ENDIF
-            code << ": " << *else_lbl << "\n";                    // ELSE:
-            //code << "...\n";                         // StmtList
-            code << *$6;
-            code << ": " << *endif_lbl << "\n";                   // ENDIF:
+            code << "?:= " << *then_lbl << ", " << *$2 << "\n";    // if BoolExp goto THEN
+            code << ":= " << *else_lbl << "\n";                    // goto ELSE
+            code << ": " << *then_lbl << "\n";                     // THEN:
+            code << *$4;                                           // StmtList
+            code << ":= " << *endif_lbl << "\n";                   // goto ENDIF
+            code << ": " << *else_lbl << "\n";                     // ELSE:
+            code << *$6;                                           // StmtList
+            code << ": " << *endif_lbl << "\n";                    // ENDIF:
             $$ = new string(code.str());
         }
-    | IF BoolExp THEN StmtList ENDIF                  // outline
+    | IF BoolExp THEN StmtList ENDIF
         {
             rules << "Stmt -> IF BoolExp THEN StmtList ENDIF\n";
 
@@ -762,15 +766,14 @@ Stmt
             string bool_string = bstack.top(); bstack.pop();
 
             code << bool_string;
-            code << "?:= " << *then_lbl << ", " << *$2 << "\n";        // if BoolExp goto THEN
-            code << ":= " << *else_lbl << "\n";                  // goto ELSE
+            code << "?:= " << *then_lbl << ", " << *$2 << "\n";   // if BoolExp goto THEN
+            code << ":= " << *else_lbl << "\n";                   // goto ELSE
             code << ": " << *then_lbl << "\n";                    // THEN:
-            //code << "...\n";                         // StmtList
-            code << *$4;
+            code << *$4;                                          // StmtList
             code << ": " << *else_lbl << "\n";                    // ELSE:
             $$ = new string(code.str());
         }
-    | WHILE BoolExp BEGINLOOP {++loop_deep;} StmtList ENDLOOP        // outline
+    | WHILE BoolExp BEGINLOOP {++loop_deep;} StmtList ENDLOOP
         {
             rules << "Stmt -> WHILE BoolExp BEGINLOOP StmtList ENDLOOP\n";
 
@@ -862,15 +865,15 @@ int main(int argc, char** argv)
            yyin = stdin;
         }
     }
-    else
+    else // error if no input file
     {
-        //yyin = stdin;
+        // yyin = stdin;
         cout << "Error: needs input file" << endl;
         exit(1);
     }
 
     fname = string(argv[1]);
-    fname.pop_back(); fname.pop_back(); fname.pop_back(); fname.pop_back(); // remove .min
+    fname.pop_back(); fname.pop_back(); fname.pop_back(); fname.pop_back(); // remove ".min"
 
     yyparse(); // calls yylex()
 

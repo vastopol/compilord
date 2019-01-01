@@ -18,18 +18,24 @@ unique things in the y file:
 
 The Data Structures in the y file:
 
-
 string funs;              // used to write out a whole function to a string from milvec
 vector<string> funslst;   // hold all the compiled function strings
+    this is the part where the string streams are written to.
+    each completed block of MIL code is written from string streams to the the string funs.
+    then that string is saved in the vector of completed function strings.
+
+map<string,int> decfunctions; // names of declared functions
     There is a global symbol table for functions (DOESN"T: that specifies the number of parameters for each.)
+
+map<string,int> symtab;              // symbol table for current function
     A function's symbol table includes its parameters and locals without distinction between them.
     Each variable has a non-negative size attribute, which is zero iff the variable is a scalar.
     That table is a strings-to-integers map that exists during and only during the compilation of that function.
 
-
-Even though a function's symbol table doesn't need to be accessed
-beyond the end of the function's declaration, it would be a good idea
-to keep it around for debugging and dynamic bounds-checking.
+vector< map<string,int> > symtablst; // all symbol tables for every function
+    Even though a function's symbol table doesn't need to be accessed
+    beyond the end of the function's declaration, it would be a good idea
+    to keep it around for debugging and dynamic bounds-checking.
 
 
 
