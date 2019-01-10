@@ -19,6 +19,7 @@ unique things in the y file:
 The Data Structures in the y file:
 
 string funs;              // used to write out a whole function to a string from milvec
+
 vector<string> funslst;   // hold all the compiled function strings
     this is the part where the string streams are written to.
     each completed block of MIL code is written from string streams to the the string funs.
@@ -36,6 +37,47 @@ vector< map<string,int> > symtablst; // all symbol tables for every function
     Even though a function's symbol table doesn't need to be accessed
     beyond the end of the function's declaration, it would be a good idea
     to keep it around for debugging and dynamic bounds-checking.
+
+map<string,int>::iterator iter; // general iterator for map<string,int>
+
+
+// string streams
+ostringstream rules;   // holds grammar rules printed out by actions
+ostringstream decs;    // holds gen()-emitted target-code declarations
+ostringstream code;    // holds gen()-emitted target-code all instructions
+ostringstream bcode;   // holds gen()-emitted target-code boolean instructions
+stack<string> bstack;  // stack for holding code strings of boolean code
+    all of the string streams are the holders of the generated mil code (except rules which only holds the specific grammar productions)
+    most of the rules write out mil code to a specific stream (usually the "code" stream), and each stream holds distinct parts of the program.
+    the streams are separated by the type of generated mil code they hold, but the stream named "code" is the main stream for the mil.
+    the different streams are eventually all combined into the "code" stream to get the final complete generated mil code. (with the exception of the rules)
+    the stack<string> bstack is needed for the control flow statements like if, if/else, while, do/while.
+    boolean expressions can be compounded so after each computation the resulting mil code from the bcode stream is pushed onto this stack.
+    when the boolean rule returns to the control flow rule the top of the stack should hold the complete mil code for the bool-exp.
+    this is then written out usually at the top of the branch or loop.
+
+
+
+// User Subroutines
+int yyerror(char* s);
+int yyerror(string s);
+void print_funs();
+void print_symtabs();
+void semantic_error(string s);
+
+// error check && consistency stuff
+string fname;             // error check if function has same name as file
+bool is_main = false;     // error check was main function declared
+int loop_deep = 0;        // error check counter for continue out of a loop
+bool continue_loop = false;
+string continue_lbl_name;
+
+int vectorSize;           // holds the size of vectors being declared
+int reductionCt;          // used to generate the label numbers
+
+bool pdec_flag = true;  // if inside of parameter declarations, output $0, $1, etc...
+int pnum_cnt = 0;       // count the # of params to a function
+
 
 
 

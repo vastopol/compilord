@@ -30,19 +30,19 @@ bool continue_loop = false;
 string continue_lbl_name;
 
 int vectorSize;           // holds the size of vectors being declared
-int reductionCt;
+int reductionCt;          // used to generate the label numbers
 
 bool pdec_flag = true;  // if inside of parameter declarations, output $0, $1, etc...
-int pnum_cnt = 0;       // count the # of params
+int pnum_cnt = 0;       // count the # of params to a function
 
 map<string,int>::iterator iter; // general iterator for map<string,int>
 
 // string streams
 ostringstream rules;   // holds grammar rules printed out by actions
 ostringstream decs;    // holds gen()-emitted target-code declarations
-ostringstream code;    // holds gen()-emitted target-code instructions
-ostringstream bcode;   // holds gen()-emitted target-code instructions
-stack<string> bstack;  // stack for holding code strings of bools
+ostringstream code;    // holds gen()-emitted target-code all instructions
+ostringstream bcode;   // holds gen()-emitted target-code boolean instructions
+stack<string> bstack;  // stack for holding code strings of boolean code
 
 // functions
 string funs;                  // used to write out a whole function to a string from milvec
